@@ -136,7 +136,7 @@ endif
 	@if command -v brew >/dev/null 2>&1; then \
 		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
 		echo "🍺 Brewパッケージをインストール中..."; \
-		brew bundle --file=$(DOTFILES_DIR)/Brewfile --no-upgrade || true; \
+		brew bundle --file=$(DOTFILES_SHELL_ROOT)/dotfiles-system/Brewfile --no-upgrade || true; \
 		echo "⚠️  一部のパッケージでエラーが発生した可能性がありますが、処理を続行します"; \
 	else \
 		echo "❌ Homebrewがインストールされていません。先に 'make install-packages-homebrew' を実行してください。"; \
