@@ -136,8 +136,7 @@ endif
 	@if command -v brew >/dev/null 2>&1; then \
 		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
 		echo "🍺 Brewパッケージをインストール中..."; \
-		brew bundle --file=$(REPO_ROOT)/dot-Brewfile --no-upgrade || true; \
-		echo "⚠️  一部のパッケージでエラーが発生した可能性がありますが、処理を続行します"; \
+		brew bundle --file=$(REPO_ROOT)/Brewfile --no-upgrade; \
 	else \
 		echo "❌ Homebrewがインストールされていません。先に 'make install-packages-homebrew' を実行してください。"; \
 		exit 1; \
@@ -534,7 +533,7 @@ list-installed-packages:
 restart-system:
 	@echo "🔄 システムを再起動しようとしています..."
 	@echo "⚠️  この操作により、すべての未保存の作業が失われます。"
-	@read -p "本当にシステムを再起動しますか? (y/N): " confirm; \
+	@printf "本当にシステムを再起動しますか? (y/N): " && read confirm; \
 	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
 		echo "システムを再起動します..."; \
 		sudo reboot; \
@@ -546,7 +545,7 @@ restart-system:
 shutdown-system:
 	@echo "⏹️ システムをシャットダウンしようとしています..."
 	@echo "⚠️  この操作により、すべての未保存の作業が失われます。"
-	@read -p "本当にシステムをシャットダウンしますか? (y/N): " confirm; \
+	@printf "本当にシステムをシャットダウンしますか? (y/N): " && read confirm; \
 			if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
 				echo "システムをシャットダウンします..."; \
 				sudo shutdown now; \

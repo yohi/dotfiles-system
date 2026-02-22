@@ -28,6 +28,8 @@ vm.min_free_kbytes = 131072
 
 ## 3. 即座に適用可能なコマンド
 
+※ 注意: ここで紹介する `/proc` 経由の変更（`swappiness` や `drop_caches` など）は一時的なものであり、システムを再起動すると元の値に戻ります。再起動後も swappiness の変更を永続化したい場合は、`/etc/sysctl.conf` を編集するか、設定後に `sudo sysctl -w vm.swappiness=10` および `sudo sysctl -p` を実行してください。
+
 ```bash
 # スワッピネス変更
 echo 10 | sudo tee /proc/sys/vm/swappiness

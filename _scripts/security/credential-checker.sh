@@ -22,7 +22,9 @@ cd "$REPO_ROOT" || { echo "cd failed: $REPO_ROOT"; exit 1; }
 
 # ログファイル設定
 TS="$(date +%Y%m%d_%H%M%S)"
-LOG_FILE="$SCRIPT_DIR/security-scan-${TS}.log"
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-security"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/security-scan-${TS}.log"
 
 # 全出力をログファイルにも保存
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -31,7 +33,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 resolve_grep() {
     if command -v rg >/dev/null 2>&1; then
         # ripgrep: オプション整合
-        printf 'rg --pcre2 -n -i --no-messages -S'
+        printf 'rg --pcre2 -n -i --no-messages -S --hidden'
     elif echo "" | grep -P "" >/dev/null 2>&1; then
         printf 'grep -r -I -n -i -P'
     elif command -v ggrep >/dev/null 2>&1 && echo "" | ggrep -P "" >/dev/null 2>&1; then
@@ -174,7 +176,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # 実行可能ファイルのチェック
 echo "🔍 実行権限ファイル:"
-find . -type f -perm -111 ! -path "./.git/*" | while read -r file; do
+while read -r file; do
     perm=$(get_octal_perm "$file")
     other_exec=${perm: -1}
     if [[ "$other_exec" -ge 1 ]]; then
@@ -183,7 +185,7 @@ find . -type f -perm -111 ! -path "./.git/*" | while read -r file; do
     else
       echo -e "  ✅ $file ${GREEN}($perm)${NC}"
     fi
-done
+done < <(find . -type f -perm -111 ! -path "./.git/*")
 
 # 5. 総合評価
 echo ""

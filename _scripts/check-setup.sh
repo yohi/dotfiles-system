@@ -131,6 +131,11 @@ check_homebrew() {
 check_fonts() {
     log_step "フォントを確認中..."
     
+    if ! command -v fc-list >/dev/null; then
+        record_result "WARN" "fontconfig (fc-list) が見つかりません - フォントチェックをスキップします"
+        return
+    fi
+    
     # IBM Plex Sans フォント
     local plex_count=$(fc-list : family | grep -i "IBM Plex Sans" | wc -l)
     if [[ $plex_count -gt 0 ]]; then

@@ -7,9 +7,11 @@ set -e
 
 # sudo権限の確認
 if ! sudo -n true 2>/dev/null; then
-    echo "❌ エラー: このスクリプトの実行にはsudo権限が必要です"
-    echo "   sudo権限を確認してから再度実行してください"
-    exit 1
+    if ! sudo -v; then
+        echo "❌ エラー: このスクリプトの実行にはsudo権限が必要です"
+        echo "   sudo権限を確認してから再度実行してください"
+        exit 1
+    fi
 fi
 
 USER_NAME="${USER:-$(whoami)}"

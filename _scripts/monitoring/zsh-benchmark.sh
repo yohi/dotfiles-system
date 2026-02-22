@@ -10,6 +10,18 @@ DEFAULT_RUNS=5
 RUNS=${1:-$DEFAULT_RUNS}
 ZSHRC_PATH="$REPO_ROOT/zsh/zshrc"
 
+# ミリ秒単位のエポックタイム取得
+now_ms() {
+    local t
+    if t=$(date +%s%3N 2>/dev/null) && [[ ${#t} -gt 10 ]]; then
+        echo "$t"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -c "import time; print(int(time.time()*1000))"
+    else
+        echo "$(date +%s)000"
+    fi
+}
+
 echo "🚀 Zsh起動時間ベンチマーク"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📁 対象zshrc: $ZSHRC_PATH"
@@ -25,16 +37,16 @@ for i in $(seq 1 $RUNS); do
     echo -n "  Run $i/$RUNS: "
 
     # zsh起動時間を測定（リポジトリのzshrcを使用）
-    start_time=$(date +%s.%3N)
+    start_time=$(now_ms)
     # ZDOTDIRを明示的に設定してリポジトリのzshrcをベンチマーク
     ZDOTDIR="$REPO_ROOT/zsh" zsh -i -c 'exit' 2>/dev/null
-    end_time=$(date +%s.%3N)
+    end_time=$(now_ms)
 
     # 実行時間計算（ミリ秒）
-    execution_time=$(echo "($end_time - $start_time) * 1000" | bc)
+    execution_time=$((end_time - start_time))
     times[$i]=$execution_time
 
-    printf "%.1fms\n" $execution_time
+    echo "${execution_time}ms"
 done
 
 echo ""
@@ -47,27 +59,27 @@ min=${times[1]}
 max=${times[1]}
 
 for time in "${times[@]}"; do
-    total=$(echo "$total + $time" | bc)
-    if (( $(echo "$time < $min" | bc -l) )); then
+    total=$((total + time))
+    if (( time < min )); then
         min=$time
     fi
-    if (( $(echo "$time > $max" | bc -l) )); then
+    if (( time > max )); then
         max=$time
     fi
 done
 
-average=$(echo "scale=1; $total / $RUNS" | bc)
+average=$((total / RUNS))
 
 echo "📈 平均起動時間: ${average}ms"
 echo "⚡ 最速時間: ${min}ms"
 echo "🐌 最遅時間: ${max}ms"
 
 # パフォーマンス評価
-if (( $(echo "$average < 100" | bc -l) )); then
+if (( average < 100 )); then
     echo "🎉 評価: 優秀 (100ms未満)"
-elif (( $(echo "$average < 200" | bc -l) )); then
+elif (( average < 200 )); then
     echo "✅ 評価: 良好 (100-200ms)"
-elif (( $(echo "$average < 500" | bc -l) )); then
+elif (( average < 500 )); then
     echo "⚠️  評価: 要改善 (200-500ms)"
 else
     echo "🚨 評価: 重大 (500ms以上)"
@@ -76,13 +88,13 @@ fi
 # 改善提案
 echo ""
 echo "💡 改善提案:"
-if (( $(echo "$average > 200" | bc -l) )); then
+if (( average > 200 )); then
     echo "  • Lazy loading の実装を検討"
     echo "  • プラグインの見直し"
     echo "  • 重い処理の条件分岐化"
 fi
 
-if (( $(echo "$average > 100" | bc -l) )); then
+if (( average > 100 )); then
     echo "  • 不要な環境変数の削除"
     echo "  • PATH設定の最適化"
 fi

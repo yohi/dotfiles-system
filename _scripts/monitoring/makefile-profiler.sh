@@ -50,6 +50,10 @@ set +e
 make_output=$(make "$TARGET" 2>&1)
 make_exit_code=$?
 set -e
+if [[ $make_exit_code -ne 0 ]]; then
+    echo "❌ Make failed with exit code $make_exit_code:"
+    echo "$make_output"
+fi
 
 end_time=$(now_ms)
 
@@ -81,7 +85,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 include_count=$(awk 'BEGIN{c=0} /^[[:space:]]*#/ {next} /^[[:space:]]*include\b/ {c++} END{print c}' Makefile 2>/dev/null || echo 0)
 mk_files=$(find _mk/ -name "*.mk" 2>/dev/null | wc -l)
-total_lines=$(find . -name "*.mk" -o -name "Makefile" | xargs wc -l | tail -1 | awk '{print $1}')
+total_lines=$(find . \( -name "*.mk" -o -name "Makefile" \) -print0 2>/dev/null | xargs -0 wc -l 2>/dev/null | tail -1 | awk '{print $1}')
+total_lines=${total_lines:-0}
 
 echo "📁 includeファイル数: $include_count"
 echo "📄 _mkファイル数: $mk_files"
@@ -90,7 +95,7 @@ echo "📏 総行数: $total_lines"
 # 最も重い_mkファイルを特定
 echo ""
 echo "📊 ファイル別行数 (上位5個):"
-find _mk/ -name "*.mk" 2>/dev/null | xargs wc -l | sort -nr | head -5 | while read lines file; do
+find _mk/ -name "*.mk" -print0 2>/dev/null | xargs -0 wc -l 2>/dev/null | sort -nr | head -5 | while read lines file; do
     echo "  📄 $file: $lines 行"
 done
 

@@ -273,8 +273,8 @@ fix-copyq-wayland: ## CopyQのWayland問題を修正（トラブルシューテ�
 	
 	# 権限の修正
 	@echo "🔐 ファイル権限を修正中..."
-	@chmod -R 755 $(HOME)/.config/copyq/ 2>/dev/null || true
-	@chmod -R 755 $(HOME)/.local/share/copyq/ 2>/dev/null || true
+	@chmod -R u+rwX,go-rwx $(HOME)/.config/copyq/ 2>/dev/null || true
+	@chmod -R u+rwX,go-rwx $(HOME)/.local/share/copyq/ 2>/dev/null || true
 	
 	# wl-clipboardの再インストール
 	@echo "🌊 wl-clipboardを再インストール中..."

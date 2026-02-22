@@ -4,7 +4,7 @@
 # Note: This module is Linux-specific and uses GNU sed.
 # It modifies /etc/sysctl.conf and other Linux system files.
 
-.PHONY: memory-check memory-cleanup memory-monitor memory-optimize
+.PHONY: memory-check memory-cleanup memory-monitor memory-optimize memory-troubleshoot memory-fix memory-info help-memory memory-troubleshoot memory-fix memory-info help-memory
 
 # メモリ使用状況の確認
 memory-check:
@@ -114,8 +114,9 @@ memory-fix:
 
 	# 保護対象プロセスのパターンを定義
 	@PROTECTED_PATTERNS="systemd|sshd|NetworkManager|dbus|kernel|init|migration|rcu_|watchdog|ksoftirqd"; \
-
-	# 異常に高いメモリ使用プロセスを特定（保護プロセス除外）
+	HIGH_MEM_PIDS=$$(ps aux --sort=-%mem --no-headers | awk -v patterns="$$PROTECTED_PATTERNS" '$$4 > 10 && $$1 != "root" && $$11 !~ /^\[/ && $$11 !~ patterns {print $$2}' | head -5); \
+	if [ -n "$$HIGH_MEM_PIDS" ]; then \
+メモリ使用プロセスを特定（保護プロセス除外）
 	HIGH_MEM_PIDS=$$(ps aux --sort=-%mem --no-headers | awk -v patterns="$$PROTECTED_PATTERNS" '$$4 > 10 && $$1 != "root" && $$11 !~ /^\[/ && $$11 !~ patterns {print $$2}' | head -5); \
 	if [ -n "$$HIGH_MEM_PIDS" ]; then \
 		echo "Found high memory processes (excluding system-critical processes):"; \
@@ -126,7 +127,7 @@ memory-fix:
 		echo "   - 終了対象プロセスが必須アプリケーションでないかご確認ください"; \
 		echo "   - システム重要プロセス（systemd, sshd, NetworkManager等）は除外済みです"; \
 		echo ""; \
-		read -p "これらのプロセスを終了しますか? (y/N): " confirm; \
+		printf "これらのプロセスを終了しますか? (y/N): " && read confirm; \
 		if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
 			for pid in $$HIGH_MEM_PIDS; do \
 				echo "Terminating process $$pid..."; \

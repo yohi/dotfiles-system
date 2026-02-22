@@ -16,7 +16,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # オプション処理
 DRY_RUN=false
-VERBOSE=false
+FORCE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -24,14 +24,14 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        --verbose)
-            VERBOSE=true
+        --force)
+            FORCE=true
             shift
             ;;
         *)
-            echo "使用方法: $0 [--dry-run] [--verbose]"
+            echo "使用方法: $0 [--dry-run] [--force]"
             echo "  --dry-run: 削除せずにプレビュー表示のみ実行"
-            echo "  --verbose: 削除される各ファイルの詳細を表示"
+            echo "  --force: 確認プロンプトをスキップして強制削除"
             exit 1
             ;;
     esac
@@ -42,7 +42,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
-CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${BLUE}🧹 Dotfiles 自動クリーンアップ${NC}"
@@ -59,8 +58,6 @@ cd "$REPO_ROOT" || { echo "ERROR: REPO_ROOT に移動できません: $REPO_ROOT
 TOTAL_CLEANED=0
 FILES_REMOVED=0
 DIRS_REMOVED=0
-SIZE_SAVED=0
-
 # 実行関数
 execute_cleanup() {
     # 使い方: execute_cleanup rm -f -- "$file" "説明"

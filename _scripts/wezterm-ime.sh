@@ -105,23 +105,23 @@ fi
 WEZTERM_PATH=""
 
 # 環境変数WEZTERM_PATHが設定されている場合はそれを使用
-if [ -n "$WEZTERM_PATH_OVERRIDE" ]; then
+if [ -n "$WEZTERM_PATH_OVERRIDE" ] && [ -x "$WEZTERM_PATH_OVERRIDE" ]; then
     WEZTERM_PATH="$WEZTERM_PATH_OVERRIDE"
     echo "Using WEZTERM_PATH_OVERRIDE: $WEZTERM_PATH"
 elif command -v wezterm > /dev/null 2>&1; then
     # PATHからweztermを検出
     WEZTERM_PATH="$(command -v wezterm)"
     echo "Found wezterm in PATH: $WEZTERM_PATH"
-elif [ -x "/home/y_ohi/bin/wezterm" ]; then
+elif [ -x "$HOME/bin/wezterm" ]; then
     # フォールバック: デフォルトの場所を確認
-    WEZTERM_PATH="/home/y_ohi/bin/wezterm"
+    WEZTERM_PATH="$HOME/bin/wezterm"
     echo "Using fallback path: $WEZTERM_PATH"
 else
     echo "Error: WezTerm not found. Please install WezTerm or set WEZTERM_PATH_OVERRIDE environment variable."
     echo "Tried locations:"
-    echo "  - Environment variable: WEZTERM_PATH_OVERRIDE"
+    echo "  - Environment variable WEZTERM_PATH_OVERRIDE: ${WEZTERM_PATH_OVERRIDE:-not set or not executable}"
     echo "  - System PATH: $(command -v wezterm 2>/dev/null || echo 'not found')"
-    echo "  - Fallback: /home/y_ohi/bin/wezterm"
+    echo "  - Fallback: $HOME/bin/wezterm (not found or not executable)"
     exit 1
 fi
 
