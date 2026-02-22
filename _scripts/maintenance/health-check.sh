@@ -203,9 +203,9 @@ echo -e "${CYAN}🔐 ファイル権限チェック${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # 実行可能ファイルの権限チェック
-script_files=$(find scripts/ -name "*.sh" -type f -print0 2>/dev/null)
+script_files=$(find _scripts/ -name "*.sh" -type f -print0 2>/dev/null)
 if [[ -n "$script_files" ]]; then
-    non_exec_list=$(find scripts/ -name "*.sh" -type f ! -perm -u=x -print)
+    non_exec_list=$(find _scripts/ -name "*.sh" -type f ! -perm -u=x -print)
     non_executable=$(printf "%s\n" "$non_exec_list" | sed '/^$/d' | wc -l)
     if [[ $non_executable -gt 0 ]]; then
         echo -e "${YELLOW}⚠️  実行権限なしスクリプト: $non_executable 個${NC}"
@@ -233,9 +233,9 @@ if [[ "$DETAILED" == "true" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # Zsh起動時間測定
-    if [[ -f "scripts/monitoring/zsh-benchmark.sh" ]]; then
+    if [[ -f "_scripts/monitoring/zsh-benchmark.sh" ]]; then
         echo "🚀 Zsh起動時間測定中..."
-        zsh_result=$(./scripts/monitoring/zsh-benchmark.sh 1 2>/dev/null | grep "平均起動時間" | grep -o "[0-9.]*ms")
+        zsh_result=$(./_scripts/monitoring/zsh-benchmark.sh 1 2>/dev/null | grep "平均起動時間" | grep -o "[0-9.]*ms")
         if [[ ! -z "$zsh_result" ]]; then
             time_value=$(echo "$zsh_result" | sed 's/ms//')
             if (( $(echo "$time_value < 100" | bc -l 2>/dev/null || echo 0) )); then
@@ -253,9 +253,9 @@ if [[ "$DETAILED" == "true" ]]; then
     fi
 
     # Make実行時間測定
-    if [[ -f "scripts/monitoring/makefile-profiler.sh" ]]; then
+    if [[ -f "_scripts/monitoring/makefile-profiler.sh" ]]; then
         echo "🔧 Makefile実行時間測定中..."
-        make_result=$(timeout 10 ./scripts/monitoring/makefile-profiler.sh help 2>/dev/null | grep "実行時間" | grep -o "[0-9.]*ms")
+        make_result=$(timeout 10 ./_scripts/monitoring/makefile-profiler.sh help 2>/dev/null | grep "実行時間" | grep -o "[0-9.]*ms")
         if [[ ! -z "$make_result" ]]; then
             time_value=$(echo "$make_result" | sed 's/ms//')
             if (( $(echo "$time_value < 500" | bc -l 2>/dev/null || echo 0) )); then

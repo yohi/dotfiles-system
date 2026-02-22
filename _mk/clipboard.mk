@@ -115,9 +115,8 @@ setup-copyq-wayland: ## CopyQのWayland対応設定を適用
 	# CopyQの再起動
 	@echo "🔄 CopyQを再起動中..."
 	@nohup $(HOME)/.local/bin/copyq-wayland > /dev/null 2>&1 & \
-	PID=$$!; \
 	sleep 3; \
-	if ! kill -0 $$PID 2>/dev/null; then \
+	if ! pgrep -f copyq >/dev/null; then \
 		echo "❌ CopyQの起動に失敗しました"; \
 		exit 1; \
 	fi

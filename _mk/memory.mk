@@ -114,9 +114,7 @@ memory-fix:
 
 	# 保護対象プロセスのパターンを定義
 	@PROTECTED_PATTERNS="systemd|sshd|NetworkManager|dbus|kernel|init|migration|rcu_|watchdog|ksoftirqd"; \
-	HIGH_MEM_PIDS=$$(ps aux --sort=-%mem --no-headers | awk -v patterns="$$PROTECTED_PATTERNS" '$$4 > 10 && $$1 != "root" && $$11 !~ /^\[/ && $$11 !~ patterns {print $$2}' | head -5); \
-	if [ -n "$$HIGH_MEM_PIDS" ]; then \
-メモリ使用プロセスを特定（保護プロセス除外）
+	# メモリ使用プロセスを特定（保護プロセス除外）
 	HIGH_MEM_PIDS=$$(ps aux --sort=-%mem --no-headers | awk -v patterns="$$PROTECTED_PATTERNS" '$$4 > 10 && $$1 != "root" && $$11 !~ /^\[/ && $$11 !~ patterns {print $$2}' | head -5); \
 	if [ -n "$$HIGH_MEM_PIDS" ]; then \
 		echo "Found high memory processes (excluding system-critical processes):"; \

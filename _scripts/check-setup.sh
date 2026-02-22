@@ -11,7 +11,6 @@ readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[0;33m'
 readonly BLUE='\033[0;34m'
 readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
 readonly NC='\033[0m' # No Color
 
 # ログ用関数
@@ -137,7 +136,7 @@ check_fonts() {
     fi
     
     # IBM Plex Sans フォント
-    local plex_count=$(fc-list : family | grep -i "IBM Plex Sans" | wc -l)
+    local plex_count=$(fc-list : family | grep -i -c "IBM Plex Sans")
     if [[ $plex_count -gt 0 ]]; then
         record_result "PASS" "IBM Plex Sans フォントが検出されました ($plex_count 個)"
     else
@@ -145,7 +144,7 @@ check_fonts() {
     fi
     
     # Cica フォント
-    local cica_count=$(fc-list : family | grep -i "Cica" | wc -l)
+    local cica_count=$(fc-list : family | grep -i -c "Cica")
     if [[ $cica_count -gt 0 ]]; then
         record_result "PASS" "Cica フォントが検出されました ($cica_count 個)"
     else
@@ -153,7 +152,7 @@ check_fonts() {
     fi
     
     # 日本語フォント
-    local jp_count=$(fc-list : family | grep -i "Noto.*CJK" | wc -l)
+    local jp_count=$(fc-list : family | grep -i -c "Noto.*CJK")
     if [[ $jp_count -gt 0 ]]; then
         record_result "PASS" "日本語フォントが検出されました ($jp_count 個)"
     else

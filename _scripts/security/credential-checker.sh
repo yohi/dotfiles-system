@@ -23,24 +23,34 @@ cd "$REPO_ROOT" || { echo "cd failed: $REPO_ROOT"; exit 1; }
 # ログファイル設定
 TS="$(date +%Y%m%d_%H%M%S)"
 LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-security"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" || { echo "Failed to create log directory: $LOG_DIR"; exit 1; }
+chmod 700 "$LOG_DIR"
 LOG_FILE="$LOG_DIR/security-scan-${TS}.log"
+touch "$LOG_FILE" && chmod 600 "$LOG_FILE"
+
+# ログファイルが書き込み可能か確認
+if [[ ! -w "$LOG_FILE" ]]; then
+    echo "Error: Log file is not writable: $LOG_FILE"
+    exit 1
+fi
 
 # 全出力をログファイルにも保存
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-# GREP コマンド解決（PCRE優先）
+# GREP コマンド解決
 resolve_grep() {
     if command -v rg >/dev/null 2>&1; then
-        # ripgrep: オプション整合
-        printf 'rg --pcre2 -n -i --no-messages -S --hidden'
+        # ripgrep: オプション整合と除外設定
+        printf 'rg --pcre2 -n -i --no-messages -S --hidden -g "!.git" -g "!*.backup.*"'
     elif echo "" | grep -P "" >/dev/null 2>&1; then
-        printf 'grep -r -I -n -i -P'
+        # GNU grep
+        printf 'grep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*"'
     elif command -v ggrep >/dev/null 2>&1 && echo "" | ggrep -P "" >/dev/null 2>&1; then
-        printf 'ggrep -r -I -n -i -P'
+        # Homebrew ggrep
+        printf 'ggrep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*"'
     else
-        # 最低限のフォールバック（POSIX EREに合わせてパターン要調整）
-        printf 'grep -r -I -n -i -E'
+        # 最低限のフォールバック
+        printf 'grep -r -I -n -i -E --exclude-dir=.git --exclude="*.backup.*"'
     fi
 }
 
@@ -93,11 +103,12 @@ declare -a MEDIUM_RISK_PATTERNS=(
 echo "🔴 高リスク検出:"
 CMD="$(resolve_grep)"
 for pattern in "${HIGH_RISK_PATTERNS[@]}"; do
-    if $CMD --exclude-dir=.git --exclude="*.backup.*" "$pattern" . >/dev/null 2>&1; then
+    if $CMD "$pattern" . >/dev/null 2>&1; then
         echo -e "${RED}  ⚠️  パターン: $pattern${NC}"
         while IFS= read -r line; do
-            echo "    📄 ${line}"
-        done < <($CMD --exclude-dir=.git --exclude="*.backup.*" "$pattern" . 2>/dev/null)
+            # ファイル名と行番号のみを表示し、内容はマスクする
+            echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+        done < <($CMD "$pattern" . 2>/dev/null)
         ((HIGH_RISK++))
         ((ISSUES_FOUND++))
     fi
@@ -106,11 +117,12 @@ done
 echo ""
 echo "🟡 中リスク検出:"
 for pattern in "${MEDIUM_RISK_PATTERNS[@]}"; do
-    if $CMD --exclude-dir=.git --exclude="*.backup.*" "$pattern" . >/dev/null 2>&1; then
+    if $CMD "$pattern" . >/dev/null 2>&1; then
         echo -e "${YELLOW}  ⚠️  パターン: $pattern${NC}"
         while IFS= read -r line; do
-            echo "    📄 ${line}"
-        done < <($CMD --exclude-dir=.git --exclude="*.backup.*" "$pattern" . 2>/dev/null)
+            # ファイル名と行番号のみを表示し、内容はマスクする
+            echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+        done < <($CMD "$pattern" . 2>/dev/null)
         ((MEDIUM_RISK++))
         ((ISSUES_FOUND++))
     fi
@@ -135,7 +147,20 @@ declare -a SENSITIVE_FILES=(
 echo "🔍 機密ファイル検索:"
 for file in "${SENSITIVE_FILES[@]}"; do
     if [[ -f "$file" ]]; then
-        if grep -q "$file" .gitignore 2>/dev/null; then
+        # git check-ignore を使用（フォールバックあり）
+        is_ignored=1
+        if command -v git >/dev/null 2>&1; then
+            if git check-ignore -q -- "$file"; then
+                is_ignored=0
+            fi
+        else
+            # gitが使えない場合はgrepで簡易チェック
+            if grep -q "$file" .gitignore 2>/dev/null; then
+                is_ignored=0
+            fi
+        fi
+
+        if [[ $is_ignored -eq 0 ]]; then
             echo -e "  ✅ $file ${GREEN}(gitignore済み)${NC}"
         else
             echo -e "  ${RED}⚠️  $file (gitignore未設定!)${NC}"

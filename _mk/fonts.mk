@@ -10,22 +10,6 @@ GOOGLE_FONTS_API := https://fonts.google.com/download?family=
 # PHONYターゲット
 .PHONY: fonts-setup fonts-install fonts-install-nerd fonts-install-japanese fonts-clean fonts-update fonts-list
 
-# セキュリティ機能: zipファイル検証
-define verify_zip_file
-	@if [ -f "$(1)" ]; then \
-		echo "🔍 $(1) を検証中..."; \
-		if unzip -t "$(1)" >/dev/null 2>&1; then \
-			echo "✅ $(1) 検証完了"; \
-		else \
-			echo "❌ エラー: $(1) は破損しています"; \
-			exit 1; \
-		fi; \
-	else \
-		echo "❌ エラー: $(1) が見つかりません"; \
-		exit 1; \
-	fi
-endef
-
 # フォント全体セットアップ
 fonts-setup: fonts-install ## フォント環境の完全セットアップ
 

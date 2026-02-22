@@ -14,7 +14,7 @@ if ! sudo -n true 2>/dev/null; then
     fi
 fi
 
-USER_NAME="${USER:-$(whoami)}"
+USER_NAME="${SUDO_USER:-${USER:-$(whoami)}}"
 
 # USER_NAME が安全な文字のみを含むかを検証
 if [[ ! "$USER_NAME" =~ ^[a-zA-Z0-9_]+$ ]]; then
