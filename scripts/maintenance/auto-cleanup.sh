@@ -12,11 +12,11 @@ get_mtime() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # オプション処理
 DRY_RUN=false
-FORCE=false
+VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -24,14 +24,14 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        --force)
-            FORCE=true
+        --verbose)
+            VERBOSE=true
             shift
             ;;
         *)
-            echo "使用方法: $0 [--dry-run] [--force]"
-            echo "  --dry-run: 実際の削除を行わず、確認のみ"
-            echo "  --force:   確認なしで実行"
+            echo "使用方法: $0 [--dry-run] [--verbose]"
+            echo "  --dry-run: 削除せずにプレビュー表示のみ実行"
+            echo "  --verbose: 削除される各ファイルの詳細を表示"
             exit 1
             ;;
     esac
@@ -42,16 +42,18 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${BLUE}🧹 Dotfiles 自動クリーンアップ${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📁 対象ディレクトリ: $DOTFILES_DIR"
-echo "🔄 モード: $([ "$DRY_RUN" == "true" ] && echo "DRY-RUN (確認のみ)" || echo "実行モード")"
-echo "📊 開始時刻: $(date '+%Y-%m-%d %H:%M:%S')"
-echo ""
+echo "📁 対象ディレクトリ: $REPO_ROOT"
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo -e "${YELLOW}🔍 ドライランモード: 実際の削除は行われません${NC}"
+fi
+echo "========================================"
 
-cd "$DOTFILES_DIR" || { echo "ERROR: DOTFILES_DIR に移動できません: $DOTFILES_DIR" >&2; exit 1; }
+cd "$REPO_ROOT" || { echo "ERROR: REPO_ROOT に移動できません: $REPO_ROOT" >&2; exit 1; }
 
 # クリーンアップカウンタ
 TOTAL_CLEANED=0

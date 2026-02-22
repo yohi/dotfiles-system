@@ -1,3 +1,4 @@
+REPO_ROOT ?= $(CURDIR)
 .DEFAULT_GOAL := setup
 include mk/system.mk
 include mk/install.mk

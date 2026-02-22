@@ -3,7 +3,7 @@
 # 使用方法: ./health-check.sh [--detailed] [--fix]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # オプション処理
 DETAILED=false
@@ -38,13 +38,13 @@ NC='\033[0m'
 
 echo -e "${BLUE}🏥 Dotfiles 健全性チェック${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📁 対象ディレクトリ: $DOTFILES_DIR"
+echo "📁 対象ディレクトリ: $REPO_ROOT"
 echo "🔍 詳細モード: $([ "$DETAILED" == "true" ] && echo "有効" || echo "無効")"
 echo "🔧 自動修復: $([ "$AUTO_FIX" == "true" ] && echo "有効" || echo "無効")"
 echo "📊 チェック開始: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-cd "$DOTFILES_DIR" || { echo "cd failed: $DOTFILES_DIR"; exit 1; }
+cd "$REPO_ROOT" || { echo "cd failed: $REPO_ROOT"; exit 1; }
 
 # チェック結果カウンタ
 TOTAL_CHECKS=0

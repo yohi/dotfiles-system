@@ -27,19 +27,19 @@ now_ms() {
 # 使用方法: ./makefile-profiler.sh [ターゲット名]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 TARGET=${1:-"help"}
 LOG_FILE="$SCRIPT_DIR/makefile-performance.log"
 
 echo "🔧 Makefile パフォーマンス分析"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📁 対象ディレクトリ: $DOTFILES_DIR"
+echo "📁 対象ディレクトリ: $REPO_ROOT"
 echo "🎯 実行ターゲット: $TARGET"
 echo "📊 測定開始: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-cd "$DOTFILES_DIR"
+cd "$REPO_ROOT"
 
 # Make実行時間を測定
 echo "⏱️  実行中: make $TARGET"

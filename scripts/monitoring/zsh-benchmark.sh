@@ -3,12 +3,12 @@
 # 使用方法: ./zsh-benchmark.sh [回数]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # 設定
 DEFAULT_RUNS=5
 RUNS=${1:-$DEFAULT_RUNS}
-ZSHRC_PATH="$DOTFILES_DIR/zsh/zshrc"
+ZSHRC_PATH="$REPO_ROOT/zsh/zshrc"
 
 echo "🚀 Zsh起動時間ベンチマーク"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -27,7 +27,7 @@ for i in $(seq 1 $RUNS); do
     # zsh起動時間を測定（リポジトリのzshrcを使用）
     start_time=$(date +%s.%3N)
     # ZDOTDIRを明示的に設定してリポジトリのzshrcをベンチマーク
-    ZDOTDIR="$DOTFILES_DIR/zsh" zsh -i -c 'exit' 2>/dev/null
+    ZDOTDIR="$REPO_ROOT/zsh" zsh -i -c 'exit' 2>/dev/null
     end_time=$(date +%s.%3N)
 
     # 実行時間計算（ミリ秒）

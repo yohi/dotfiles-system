@@ -165,7 +165,7 @@ check_neovim() {
         
         # 設定ファイルの確認
         local config_dir="$HOME/.config/nvim"
-        local dotfiles_dir="${DOTFILES_DIR:-$HOME/dotfiles-core}/components/dotfiles-vim"
+        local dotfiles_dir="${DOTFILES_CORE_DIR:-$HOME/dotfiles-core}/components/dotfiles-vim"
         
         if [[ -L "$config_dir" ]] && [[ -d "$dotfiles_dir" ]]; then
             record_result "PASS" "Neovim設定がシンボリックリンクされています"
@@ -312,7 +312,7 @@ check_gnome() {
 check_dotfiles() {
     log_step "dotfiles設定を確認中..."
     
-    local dotfiles_dir="${DOTFILES_DIR:-$HOME/dotfiles-core}"
+    local dotfiles_dir="${DOTFILES_CORE_DIR:-$HOME/dotfiles-core}"
     
     if [[ -d "$dotfiles_dir" ]]; then
         record_result "PASS" "dotfilesディレクトリが存在します"

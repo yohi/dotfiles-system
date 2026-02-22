@@ -3,7 +3,7 @@
 # 使用方法: ./credential-checker.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # 色コード定義
 RED='\033[0;31m'
@@ -14,11 +14,11 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🔒 Dotfiles セキュリティチェック${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📁 対象ディレクトリ: $DOTFILES_DIR"
+echo "📁 対象ディレクトリ: $REPO_ROOT"
 echo "📊 チェック開始: $(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-cd "$DOTFILES_DIR" || { echo "cd failed: $DOTFILES_DIR"; exit 1; }
+cd "$REPO_ROOT" || { echo "cd failed: $REPO_ROOT"; exit 1; }
 
 # ログファイル設定
 TS="$(date +%Y%m%d_%H%M%S)"
