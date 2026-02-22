@@ -7,7 +7,7 @@
 
 ```text
 dotfiles-system/
-├── mk/                         # Makefile sub-targets
+├── _mk/                         # Makefile sub-targets
 │   ├── clipboard.mk            # Clipboard manager setup
 │   ├── fonts.mk                # Font installation
 │   ├── install.mk              # Package installation
@@ -32,7 +32,7 @@ dotfiles-system/
 ├── logid/                      # Logitech device configuration
 │   └── logid.cfg               # logid config file
 ├── Brewfile                    # Homebrew package list
-└── Makefile                    # Setup entry point (includes mk/*.mk)
+└── Makefile                    # Setup entry point (includes _mk/*.mk)
 ```
 
 ## COMPONENT LAYOUT CONVENTION
@@ -65,7 +65,7 @@ GNU Stow creates symlinks from this repo's root into `~/`.
 
 ```makefile
 .DEFAULT_GOAL := setup
-# include mk/<feature>.mk    # if using mk/ subdirectory
+# include _mk/<feature>.mk    # if using _mk/ subdirectory
 
 .PHONY: setup
 setup:
@@ -104,7 +104,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ## THIS COMPONENT — SPECIAL NOTES
 
 - **All subdirectories are excluded from Stow.** System configs are applied via scripts and `make` targets.
-- `mk/` splits Makefile targets by system subsystem (fonts, clipboard, memory, packages, etc.).
+- `_mk/` splits Makefile targets by system subsystem (fonts, clipboard, memory, packages, etc.).
 - `scripts/` is organized by concern: `maintenance/`, `monitoring/`, `security/`.
 - `logid/logid.cfg` is for Logitech device daemon — installed to `/etc/logid.cfg` (requires `sudo`).
 - `Brewfile` lists Homebrew packages — applied via `brew bundle`.

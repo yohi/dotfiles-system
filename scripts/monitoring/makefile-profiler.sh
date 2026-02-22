@@ -80,17 +80,17 @@ echo "🔍 Makefile構造分析"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 include_count=$(awk 'BEGIN{c=0} /^[[:space:]]*#/ {next} /^[[:space:]]*include\b/ {c++} END{print c}' Makefile 2>/dev/null || echo 0)
-mk_files=$(find mk/ -name "*.mk" 2>/dev/null | wc -l)
+mk_files=$(find _mk/ -name "*.mk" 2>/dev/null | wc -l)
 total_lines=$(find . -name "*.mk" -o -name "Makefile" | xargs wc -l | tail -1 | awk '{print $1}')
 
 echo "📁 includeファイル数: $include_count"
-echo "📄 mkファイル数: $mk_files"
+echo "📄 _mkファイル数: $mk_files"
 echo "📏 総行数: $total_lines"
 
-# 最も重いmkファイルを特定
+# 最も重い_mkファイルを特定
 echo ""
 echo "📊 ファイル別行数 (上位5個):"
-find mk/ -name "*.mk" 2>/dev/null | xargs wc -l | sort -nr | head -5 | while read lines file; do
+find _mk/ -name "*.mk" 2>/dev/null | xargs wc -l | sort -nr | head -5 | while read lines file; do
     echo "  📄 $file: $lines 行"
 done
 
@@ -104,7 +104,7 @@ if (( execution_time_ms > 500 )); then
 fi
 
 if (( total_lines > 5000 )); then
-    echo "  • 大きなmkファイルの分割検討"
+    echo "  • 大きな_mkファイルの分割検討"
 fi
 
 echo "  • キャッシュ機構の導入"

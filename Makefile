@@ -1,10 +1,10 @@
 REPO_ROOT ?= $(CURDIR)
 .DEFAULT_GOAL := setup
-include mk/system.mk
-include mk/install.mk
-include mk/fonts.mk
-include mk/clipboard.mk
-include mk/memory.mk
+include _mk/system.mk
+include _mk/install.mk
+include _mk/fonts.mk
+include _mk/clipboard.mk
+include _mk/memory.mk
 .PHONY: setup
 setup:
 	@echo "==> Setting up dotfiles-system"

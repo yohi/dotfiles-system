@@ -7,6 +7,6 @@
 ^Brewfile$
 ^docs$
 ^logid$
-^mk$
+^_mk$
 ^scripts$
 ^\.gitignore$
