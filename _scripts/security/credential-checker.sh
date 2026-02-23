@@ -219,7 +219,7 @@ echo "🔍 実行権限ファイル:"
 while read -r file; do
     perm=$(get_octal_perm "$file")
     other_exec=${perm: -1}
-    if [[ "$other_exec" -ge 1 ]]; then
+    if (( (10#$other_exec & 1) )); then
       echo -e "  ${YELLOW}⚠️  $file ($perm) - others に実行権限${NC}"
       ((LOW_RISK++)); ((ISSUES_FOUND++))
     else
