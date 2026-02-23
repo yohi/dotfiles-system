@@ -41,16 +41,16 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 resolve_grep() {
     if command -v rg >/dev/null 2>&1; then
         # ripgrep: オプション整合と除外設定
-        printf 'rg --pcre2 -n -i --no-messages -S --hidden -g "!.git" -g "!*.backup.*"'
+        GREP_CMD=(rg --pcre2 -n -i --no-messages -S --hidden -g "!.git" -g "!*.backup.*")
     elif echo "" | grep -P "" >/dev/null 2>&1; then
         # GNU grep
-        printf 'grep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*"'
+        GREP_CMD=(grep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*")
     elif command -v ggrep >/dev/null 2>&1 && echo "" | ggrep -P "" >/dev/null 2>&1; then
         # Homebrew ggrep
-        printf 'ggrep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*"'
+        GREP_CMD=(ggrep -r -I -n -i -P --exclude-dir=.git --exclude="*.backup.*")
     else
         # 最低限のフォールバック
-        printf 'grep -r -I -n -i -E --exclude-dir=.git --exclude="*.backup.*"'
+        GREP_CMD=(grep -r -I -n -i -E --exclude-dir=.git --exclude="*.backup.*")
     fi
 }
 
@@ -101,14 +101,14 @@ declare -a MEDIUM_RISK_PATTERNS=(
 )
 
 echo "🔴 高リスク検出:"
-CMD="$(resolve_grep)"
+resolve_grep
 for pattern in "${HIGH_RISK_PATTERNS[@]}"; do
-    if $CMD "$pattern" . >/dev/null 2>&1; then
+    if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
         echo -e "${RED}  ⚠️  パターン: $pattern${NC}"
         while IFS= read -r line; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
-        done < <($CMD "$pattern" . 2>/dev/null)
+        done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
         ((HIGH_RISK++))
         ((ISSUES_FOUND++))
     fi
@@ -117,12 +117,12 @@ done
 echo ""
 echo "🟡 中リスク検出:"
 for pattern in "${MEDIUM_RISK_PATTERNS[@]}"; do
-    if $CMD "$pattern" . >/dev/null 2>&1; then
+    if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
         echo -e "${YELLOW}  ⚠️  パターン: $pattern${NC}"
         while IFS= read -r line; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
-        done < <($CMD "$pattern" . 2>/dev/null)
+        done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
         ((MEDIUM_RISK++))
         ((ISSUES_FOUND++))
     fi

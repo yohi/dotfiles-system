@@ -33,7 +33,7 @@ memory-monitor:
 	@echo "👀 Monitoring high memory processes (Ctrl+C to stop)..."
 	@while true; do \
 		clear; \
-		echo "$(shell date): Memory Monitor"; \
+		echo "$$(date): Memory Monitor"; \
 		echo "==============================="; \
 		free -h; \
 		echo ""; \
