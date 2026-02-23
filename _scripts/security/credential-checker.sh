@@ -110,14 +110,15 @@ declare -a MEDIUM_RISK_PATTERNS=(
 echo "🔴 高リスク検出:"
 resolve_grep
 for pattern in "${HIGH_RISK_PATTERNS[@]}"; do
-    if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
+    matches=$("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
+    if [[ -n "$matches" ]]; then
         echo -e "${RED}  ⚠️  パターン: $pattern${NC}"
         match_count=0
-        while IFS= read -r line; do
+        while IFS= read -r line || [[ -n "$line" ]]; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
             ((match_count++))
-        done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
+        done <<< "$matches"
         ((HIGH_RISK+=match_count))
         ((ISSUES_FOUND+=match_count))
     fi
@@ -126,14 +127,15 @@ done
 echo ""
 echo "🟡 中リスク検出:"
 for pattern in "${MEDIUM_RISK_PATTERNS[@]}"; do
-    if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
+    matches=$("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
+    if [[ -n "$matches" ]]; then
         echo -e "${YELLOW}  ⚠️  パターン: $pattern${NC}"
         match_count=0
-        while IFS= read -r line; do
+        while IFS= read -r line || [[ -n "$line" ]]; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
             ((match_count++))
-        done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
+        done <<< "$matches"
         ((MEDIUM_RISK+=match_count))
         ((ISSUES_FOUND+=match_count))
     fi
@@ -196,7 +198,7 @@ declare -a REQUIRED_ENV_VARS=(
 
 echo "🔍 必要な環境変数:"
 for var in "${REQUIRED_ENV_VARS[@]}"; do
-    if [[ ! -z "${!var}" ]]; then
+    if [[ -n "${!var}" ]]; then
         echo -e "  ✅ $var ${GREEN}(設定済み)${NC}"
     else
         echo -e "  ${YELLOW}⚠️  $var (未設定)${NC}"
