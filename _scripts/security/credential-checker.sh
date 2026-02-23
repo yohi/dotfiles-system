@@ -221,7 +221,7 @@ while read -r file; do
     else
       echo -e "  ✅ $file ${GREEN}($perm)${NC}"
     fi
-done < <(find . -type f -perm -111 ! -path "./.git/*")
+done < <(find . -type f -perm /111 ! -path "./.git/*")
 
 # 5. 総合評価
 echo ""
