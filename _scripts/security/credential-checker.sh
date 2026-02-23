@@ -51,6 +51,13 @@ resolve_grep() {
     else
         # 最低限のフォールバック
         GREP_CMD=(grep -r -I -n -i -E --exclude-dir=.git --exclude="*.backup.*")
+        echo -e "${YELLOW}⚠️  警告: 高度な正規表現エンジン(rg/GNU grep)が見つかりません。POSIX 互換モードでパターンを変換して実行します。${NC}" >&2
+        for i in "${!HIGH_RISK_PATTERNS[@]}"; do
+            HIGH_RISK_PATTERNS[$i]="${HIGH_RISK_PATTERNS[$i]//\\s/[[:space:]]}"
+        done
+        for i in "${!MEDIUM_RISK_PATTERNS[@]}"; do
+            MEDIUM_RISK_PATTERNS[$i]="${MEDIUM_RISK_PATTERNS[$i]//\\s/[[:space:]]}"
+        done
     fi
 }
 
@@ -105,12 +112,14 @@ resolve_grep
 for pattern in "${HIGH_RISK_PATTERNS[@]}"; do
     if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
         echo -e "${RED}  ⚠️  パターン: $pattern${NC}"
+        match_count=0
         while IFS= read -r line; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+            ((match_count++))
         done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
-        ((HIGH_RISK++))
-        ((ISSUES_FOUND++))
+        ((HIGH_RISK+=match_count))
+        ((ISSUES_FOUND+=match_count))
     fi
 done
 
@@ -119,12 +128,14 @@ echo "🟡 中リスク検出:"
 for pattern in "${MEDIUM_RISK_PATTERNS[@]}"; do
     if "${GREP_CMD[@]}" "$pattern" . >/dev/null 2>&1; then
         echo -e "${YELLOW}  ⚠️  パターン: $pattern${NC}"
+        match_count=0
         while IFS= read -r line; do
             # ファイル名と行番号のみを表示し、内容はマスクする
             echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+            ((match_count++))
         done < <("${GREP_CMD[@]}" "$pattern" . 2>/dev/null)
-        ((MEDIUM_RISK++))
-        ((ISSUES_FOUND++))
+        ((MEDIUM_RISK+=match_count))
+        ((ISSUES_FOUND+=match_count))
     fi
 done
 
