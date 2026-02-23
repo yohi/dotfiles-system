@@ -116,7 +116,8 @@ for pattern in "${HIGH_RISK_PATTERNS[@]}"; do
         match_count=0
         while IFS= read -r line || [[ -n "$line" ]]; do
             # ファイル名と行番号のみを表示し、内容はマスクする
-            echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+            rest="${line#*:}"
+            echo "    📄 ${line%%:*}:${rest%%:*}: ********** (masked)"
             ((match_count++))
         done <<< "$matches"
         ((HIGH_RISK+=match_count))
@@ -133,7 +134,8 @@ for pattern in "${MEDIUM_RISK_PATTERNS[@]}"; do
         match_count=0
         while IFS= read -r line || [[ -n "$line" ]]; do
             # ファイル名と行番号のみを表示し、内容はマスクする
-            echo "    📄 $(echo "$line" | cut -d: -f1,2): ********** (masked)"
+            rest="${line#*:}"
+            echo "    📄 ${line%%:*}:${rest%%:*}: ********** (masked)"
             ((match_count++))
         done <<< "$matches"
         ((MEDIUM_RISK+=match_count))
