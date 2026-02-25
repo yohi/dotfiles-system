@@ -165,7 +165,7 @@ install-packages-ibm-plex-fonts:
 		echo "✅ ダウンロード完了 ($$(ls -lh plex-fonts.zip | awk '{print $$5}'))"; \
 		if [ -f plex-fonts.zip ] && [ -s plex-fonts.zip ]; then \
 			echo "📂 ZIPファイルを展開中..."; \
-			if unzip zsh -q plex-fonts.zip; then \
+			if unzip -q plex-fonts.zip; then \
 				if [ -d ibm-plex-sans/fonts/complete/ttf ]; then \
 					FONT_COUNT=$$(find ibm-plex-sans/fonts/complete/ttf -name "*.ttf" | wc -l); \
 					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
@@ -225,7 +225,7 @@ install-packages-cica-fonts:
 			echo "✅ ダウンロード完了 ($$(ls -lh cica-fonts.zip | awk '{print $$5}'))"; \
 			if [ -f cica-fonts.zip ] && [ -s cica-fonts.zip ]; then \
 				echo "📂 ZIPファイルを展開中..."; \
-				if unzip zsh -q cica-fonts.zip; then \
+				if unzip -q cica-fonts.zip; then \
 					FONT_COUNT=$$(find . -maxdepth 1 -name "Cica*.ttf" | wc -l); \
 					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
 					if [ "$$FONT_COUNT" -gt 0 ]; then \
