@@ -127,7 +127,7 @@ install-packages-fuse:
 # Brewfileを使用してアプリケーションをインストール
 install-packages-apps:
 ifndef FORCE
-	@if $(call check_marker,install-packages-apps) 2>/dev/null; then \
+	@if [ -n "$(call check_marker,install-packages-apps)" ] && $(call check_marker,install-packages-apps) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-apps)"; \
 		exit 0; \
 	fi
@@ -147,7 +147,7 @@ endif
 # DEBパッケージをインストール（IDE・ブラウザ含む）
 install-packages-deb:
 ifndef FORCE
-	@if $(call check_marker,install-packages-deb) 2>/dev/null; then \
+	@if [ -n "$(call check_marker,install-packages-deb)" ] && $(call check_marker,install-packages-deb) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-deb)"; \
 		exit 0; \
 	fi

@@ -1,7 +1,7 @@
 # システムレベルの基本設定
 system-setup:
 ifndef FORCE
-	@if $(call check_marker,setup-system) ; then \
+	@if [ -n "$(call check_marker,setup-system)" ] && $(call check_marker,setup-system) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 		exit 0; \
 	fi
@@ -72,7 +72,7 @@ endif
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
 
 	# ユーザーディレクトリ管理パッケージをインストール
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs 2>/dev/null || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
 
 	# ホームディレクトリを英語名にする（非対話的）
 	@LANG=C xdg-user-dirs-update --force
