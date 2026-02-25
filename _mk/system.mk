@@ -66,7 +66,7 @@ endif
 
 	# 基本開発ツール
 	@echo "🔧 基本開発ツールをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip 2>/dev/null || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh 2>/dev/null || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
 
 	# ユーザーディレクトリ管理パッケージをインストール
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs
@@ -165,7 +165,7 @@ install-packages-ibm-plex-fonts:
 		echo "✅ ダウンロード完了 ($$(ls -lh plex-fonts.zip | awk '{print $$5}'))"; \
 		if [ -f plex-fonts.zip ] && [ -s plex-fonts.zip ]; then \
 			echo "📂 ZIPファイルを展開中..."; \
-			if unzip -q plex-fonts.zip; then \
+			if unzip zsh -q plex-fonts.zip; then \
 				if [ -d ibm-plex-sans/fonts/complete/ttf ]; then \
 					FONT_COUNT=$$(find ibm-plex-sans/fonts/complete/ttf -name "*.ttf" | wc -l); \
 					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
@@ -225,7 +225,7 @@ install-packages-cica-fonts:
 			echo "✅ ダウンロード完了 ($$(ls -lh cica-fonts.zip | awk '{print $$5}'))"; \
 			if [ -f cica-fonts.zip ] && [ -s cica-fonts.zip ]; then \
 				echo "📂 ZIPファイルを展開中..."; \
-				if unzip -q cica-fonts.zip; then \
+				if unzip zsh -q cica-fonts.zip; then \
 					FONT_COUNT=$$(find . -maxdepth 1 -name "Cica*.ttf" | wc -l); \
 					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
 					if [ "$$FONT_COUNT" -gt 0 ]; then \

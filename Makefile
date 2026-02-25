@@ -14,4 +14,5 @@ link:
 
 .PHONY: setup
 setup:
+	$(MAKE) system-setup
 	@echo "==> Setting up dotfiles-system"
