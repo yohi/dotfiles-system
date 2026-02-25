@@ -66,7 +66,7 @@ endif
 
 	# 基本開発ツール
 	@echo "🔧 基本開発ツールをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip 2>/dev/null || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh 2>/dev/null || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
 
 	# ユーザーディレクトリ管理パッケージをインストール
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs
