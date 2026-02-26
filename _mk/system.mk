@@ -72,7 +72,7 @@ endif
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
 	
 	# ユーザーディレクトリ管理パッケージをインストール
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs 2>/dev/null || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
 
 	# ホームディレクトリを英語名にする（非対話的）
 	@LANG=C xdg-user-dirs-update --force
@@ -159,10 +159,14 @@ install-packages-ibm-plex-fonts:
 	echo "🔍 現在認識されているIBM Plex Sansフォント数: $$EXISTING_FONTS"; \
 	echo "📥 IBM Plex フォントをダウンロード中..."; \
 	rm -rf plex-fonts.zip ibm-plex-sans ; \
-	PLEX_VERSION=$$(curl -s https://api.github.com/repos/IBM/plex/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$'  || echo "@ibm/plex-sans@1.1.0"); \
+	RELEASE_JSON=$$(curl -s https://api.github.com/repos/IBM/plex/releases/latest); \
+	PLEX_VERSION=$$(echo "$$RELEASE_JSON" | jq -r '.tag_name' 2>/dev/null || echo "$$RELEASE_JSON" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$' || echo "@ibm/plex-sans@1.1.0"); \
 	echo "📦 IBM Plex バージョン: $$PLEX_VERSION"; \
-	ENCODED_VERSION=$$(echo "$$PLEX_VERSION" | sed 's/@/%40/g'); \
-	DOWNLOAD_URL="https://github.com/IBM/plex/releases/download/$$ENCODED_VERSION/ibm-plex-sans.zip"; \
+	DOWNLOAD_URL=$$(echo "$$RELEASE_JSON" | jq -r '.assets[] | select(.name == "ibm-plex-sans.zip") | .browser_download_url' 2>/dev/null); \
+	if [ -z "$$DOWNLOAD_URL" ] || [ "$$DOWNLOAD_URL" = "null" ]; then \
+		ENCODED_VERSION=$$(echo "$$PLEX_VERSION" | sed 's/@/%40/g'); \
+		DOWNLOAD_URL="https://github.com/IBM/plex/releases/download/$$ENCODED_VERSION/ibm-plex-sans.zip"; \
+	fi; \
 	echo "🔗 ダウンロードURL: $$DOWNLOAD_URL"; \
 	if wget --timeout=30 "$$DOWNLOAD_URL" -O plex-fonts.zip; then \
 	echo "✅ ダウンロード完了 ($$(ls -lh plex-fonts.zip | awk '{print $$5}'))"; \
