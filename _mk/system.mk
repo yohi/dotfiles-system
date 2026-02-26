@@ -97,10 +97,13 @@ endif
 		https://www.ubuntulinux.jp/ubuntu-jp-ppa-keyring.gpg \
 		https://www.ubuntulinux.jp/ubuntu-ja-archive-keyring.gpg; do \
 		key_file="/etc/apt/trusted.gpg.d/$$(basename $$key_url)"; \
-		if wget -qO- "$$key_url" | grep -q "BEGIN PGP"; then \
-			wget -qO- "$$key_url" | sudo tee "$$key_file" >/dev/null; \
+		tmp_key=$$(mktemp); \
+		if wget -qO "$$tmp_key" "$$key_url" && grep -q "BEGIN PGP" "$$tmp_key"; then \
+			sudo tee "$$key_file" < "$$tmp_key" >/dev/null; \
+			rm -f "$$tmp_key"; \
 		else \
 			echo "❌ エラー: $$key_url から有効なGPGキーを取得できませんでした"; \
+			rm -f "$$tmp_key"; \
 			exit 1; \
 		fi; \
 	done

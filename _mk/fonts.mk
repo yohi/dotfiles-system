@@ -73,7 +73,7 @@ fonts-install-nerd: ## Nerd Fonts (開発者向けアイコンフォント) を�
 			exit 1; \
 		fi; \
 	done && \
-	rm -f unzip_verify.log && \
+	rm -f unzip_verify.log
 	@echo "✅ Nerd Fontsのインストールが完了しました"
 
 # 日本語フォントのインストール
