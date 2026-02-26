@@ -112,7 +112,7 @@ endif
 
 	# AppImage実行に必要なFUSEパッケージ
 	@echo "📦 AppImage実行用のFUSEパッケージをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2t64 libfuse3-3 fuse3  || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2t64  fuse3  || \
 	sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2 fuse3  || \
 	sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse fuse3 || true
 
