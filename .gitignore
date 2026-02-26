@@ -4,3 +4,6 @@
 *.bak
 *.swp
 *.log
+
+# Ignore injected files in components
+_mk/idempotency.mk
