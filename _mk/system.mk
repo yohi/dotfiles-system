@@ -75,7 +75,11 @@ endif
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
 
 	# ホームディレクトリを英語名にする（非対話的）
-	@LANG=C xdg-user-dirs-update --force
+	@if command -v xdg-user-dirs-update >/dev/null 2>&1; then \
+		LANG=C xdg-user-dirs-update --force; \
+	else \
+		echo "⚠️  xdg-user-dirs-update が見つからないため、ディレクトリ名の変更をスキップします"; \
+	fi
 	
 	# Ubuntu Japanese
 	@echo "🇯🇵 Ubuntu Japanese環境を設定中..."
@@ -127,7 +131,7 @@ endif
 	if ! grep -q "vm.swappiness=10" /etc/sysctl.conf ; then \
 	echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf >/dev/null; \
 	fi; \
-	sudo sysctl vm.swappiness=10 >/dev/null 2>&1 || true; \
+	sudo sysctl vm.swappiness=10 || echo "⚠️  vm.swappiness の設定適用に失敗しましたが、処理を続行します"; \
 	NEW_SWAPPINESS=$$(cat /proc/sys/vm/swappiness  || echo "unknown"); \
 	echo "✅ スワップ積極度を最適化しました: $$CURRENT_SWAPPINESS → $$NEW_SWAPPINESS"; \
 	echo "💡 この設定により、メモリ使用量が90%を超えるまでスワップを使用しません"; \
