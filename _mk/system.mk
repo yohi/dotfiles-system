@@ -18,7 +18,7 @@ endif
 	@echo "🔧 問題のあるリポジトリを修正中..."
 	# CopyQ PPAは正常なPPAなので無効化しない
 	@if [ -f /etc/apt/sources.list.d/remmina-ppa-team-ubuntu-remmina-next-plucky.list ]; then \
-		sudo mv /etc/apt/sources.list.d/remmina-ppa-team-ubuntu-remmina-next-plucky.list /etc/apt/sources.list.d/remmina-ppa-team-ubuntu-remmina-next-plucky.list.disabled  || true; \
+	sudo mv /etc/apt/sources.list.d/remmina-ppa-team-ubuntu-remmina-next-plucky.list /etc/apt/sources.list.d/remmina-ppa-team-ubuntu-remmina-next-plucky.list.disabled  || true; \
 	fi
 
 	# TablePlusの公開鍵を再インストール
@@ -56,27 +56,27 @@ endif
 	@echo "⌨️  IBus入力メソッドを設定中..."
 	@gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'mozc-jp')]"  || true
 	@gsettings set org.gnome.desktop.input-sources xkb-options "['ctrl:nocaps']"  || true
-
-	        # IBusサービスの有効化
-	        @systemctl --user enable ibus-daemon || true
-	        @systemctl --user start ibus-daemon || true
 	
-	                # フォント環境のセットアップ
-	                @if [ "$$SKIP_FONTS" != "1" ]; then \
-	                        $(MAKE) fonts-setup; \
-	                else \
-	                        echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
-	                fi	
-	        # 基本開発ツール
-	        @echo "🔧 基本開発ツールをインストール中..."
+	# IBusサービスの有効化
+	@systemctl --user enable ibus-daemon || true
+	@systemctl --user start ibus-daemon || true
+	
+	# フォント環境のセットアップ
+	@if [ "$$SKIP_FONTS" != "1" ]; then \
+	$(MAKE) fonts-setup; \
+	else \
+	echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
+	fi
+	# 基本開発ツール
+	@echo "🔧 基本開発ツールをインストール中..."
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
-
+	
 	# ユーザーディレクトリ管理パッケージをインストール
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs 2>/dev/null || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
 
 	# ホームディレクトリを英語名にする（非対話的）
 	@LANG=C xdg-user-dirs-update --force
-
+	
 	# Ubuntu Japanese
 	@echo "🇯🇵 Ubuntu Japanese環境を設定中..."
 	@sudo wget https://www.ubuntulinux.jp/ubuntu-jp-ppa-keyring.gpg -P /etc/apt/trusted.gpg.d/  || true
@@ -122,17 +122,17 @@ endif
 	@echo "🧠 メモリ最適化設定を適用中..."
 	@CURRENT_SWAPPINESS=$$(cat /proc/sys/vm/swappiness  || echo 60); \
 	if [ $$CURRENT_SWAPPINESS -ne 10 ]; then \
-		echo "📊 現在のスワップ積極度: $$CURRENT_SWAPPINESS"; \
-		echo "⚙️  推奨値（vm.swappiness=10）を設定中..."; \
-		if ! grep -q "vm.swappiness=10" /etc/sysctl.conf ; then \
-			echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf >/dev/null; \
-		fi; \
-		sudo sysctl vm.swappiness=10 >/dev/null 2>&1 || true; \
-		NEW_SWAPPINESS=$$(cat /proc/sys/vm/swappiness  || echo "unknown"); \
-		echo "✅ スワップ積極度を最適化しました: $$CURRENT_SWAPPINESS → $$NEW_SWAPPINESS"; \
-		echo "💡 この設定により、メモリ使用量が90%を超えるまでスワップを使用しません"; \
+	echo "📊 現在のスワップ積極度: $$CURRENT_SWAPPINESS"; \
+	echo "⚙️  推奨値（vm.swappiness=10）を設定中..."; \
+	if ! grep -q "vm.swappiness=10" /etc/sysctl.conf ; then \
+	echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf >/dev/null; \
+	fi; \
+	sudo sysctl vm.swappiness=10 >/dev/null 2>&1 || true; \
+	NEW_SWAPPINESS=$$(cat /proc/sys/vm/swappiness  || echo "unknown"); \
+	echo "✅ スワップ積極度を最適化しました: $$CURRENT_SWAPPINESS → $$NEW_SWAPPINESS"; \
+	echo "💡 この設定により、メモリ使用量が90%を超えるまでスワップを使用しません"; \
 	else \
-		echo "✅ スワップ積極度は既に最適化されています ($$CURRENT_SWAPPINESS)"; \
+	echo "✅ スワップ積極度は既に最適化されています ($$CURRENT_SWAPPINESS)"; \
 	fi
 
 	@$(call create_marker,setup-system,N/A)
@@ -165,49 +165,49 @@ install-packages-ibm-plex-fonts:
 	DOWNLOAD_URL="https://github.com/IBM/plex/releases/download/$$ENCODED_VERSION/ibm-plex-sans.zip"; \
 	echo "🔗 ダウンロードURL: $$DOWNLOAD_URL"; \
 	if wget --timeout=30 "$$DOWNLOAD_URL" -O plex-fonts.zip; then \
-		echo "✅ ダウンロード完了 ($$(ls -lh plex-fonts.zip | awk '{print $$5}'))"; \
-		if [ -f plex-fonts.zip ] && [ -s plex-fonts.zip ]; then \
-			echo "📂 ZIPファイルを展開中..."; \
-			if unzip -q plex-fonts.zip; then \
-				if [ -d ibm-plex-sans/fonts/complete/ttf ]; then \
-					FONT_COUNT=$$(find ibm-plex-sans/fonts/complete/ttf -name "*.ttf" | wc -l); \
-					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
-					if [ "$$FONT_COUNT" -gt 0 ]; then \
-						echo "📋 フォントファイルをコピー中..."; \
-						cp ibm-plex-sans/fonts/complete/ttf/*.ttf $(HOME_DIR)/.local/share/fonts/ibm-plex/ && \
-						COPIED_COUNT=$$(ls -1 $(HOME_DIR)/.local/share/fonts/ibm-plex/*.ttf | wc -l  || echo "0"); \
-						echo "✅ コピー完了: $$COPIED_COUNT 個のフォントファイル"; \
-						rm -rf plex-fonts.zip ibm-plex-sans ; \
-						echo "🔄 フォントキャッシュを更新中..."; \
-						(fc-cache -f  && echo "✅ フォントキャッシュ更新完了") || echo "⚠️  フォントキャッシュの更新をスキップ（システムが自動更新します）"; \
-						FINAL_COUNT=$$(fc-list | grep -i "IBM Plex Sans" | wc -l  || echo "0"); \
-						echo "🎉 インストール完了: $$FINAL_COUNT 個のIBM Plex Sansフォントが認識されています"; \
-						echo ""; \
-						echo "📋 インストールされたフォント一覧:"; \
-						fc-list | grep -i "IBM Plex Sans" | head -5 | sed 's/^/  /' || echo "  (フォント一覧の取得に失敗)"; \
-						if [ $$(fc-list | grep -i "IBM Plex Sans" | wc -l) -gt 5 ]; then \
-							echo "  ...他 $$(echo $$(($$FINAL_COUNT - 5))) 個"; \
-						fi; \
-					else \
-						echo "❌ TTFファイルが見つかりません"; \
-						rm -rf plex-fonts.zip ibm-plex-sans ; \
-					fi; \
-				else \
-					echo "❌ 期待されるディレクトリ構造が見つかりません"; \
-					rm -rf plex-fonts.zip ibm-plex-sans ; \
-				fi; \
-			else \
-				echo "❌ ZIPファイルの展開に失敗しました"; \
-				rm -rf plex-fonts.zip ibm-plex-sans ; \
-			fi; \
-		else \
-			echo "❌ ダウンロードされたファイルが空または見つかりません"; \
-			rm -rf plex-fonts.zip ; \
-		fi; \
+	echo "✅ ダウンロード完了 ($$(ls -lh plex-fonts.zip | awk '{print $$5}'))"; \
+	if [ -f plex-fonts.zip ] && [ -s plex-fonts.zip ]; then \
+	echo "📂 ZIPファイルを展開中..."; \
+	if unzip -q plex-fonts.zip; then \
+	if [ -d ibm-plex-sans/fonts/complete/ttf ]; then \
+	FONT_COUNT=$$(find ibm-plex-sans/fonts/complete/ttf -name "*.ttf" | wc -l); \
+	echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
+	if [ "$$FONT_COUNT" -gt 0 ]; then \
+	echo "📋 フォントファイルをコピー中..."; \
+	cp ibm-plex-sans/fonts/complete/ttf/*.ttf $(HOME_DIR)/.local/share/fonts/ibm-plex/ && \
+	COPIED_COUNT=$$(ls -1 $(HOME_DIR)/.local/share/fonts/ibm-plex/*.ttf | wc -l  || echo "0"); \
+	echo "✅ コピー完了: $$COPIED_COUNT 個のフォントファイル"; \
+	rm -rf plex-fonts.zip ibm-plex-sans ; \
+	echo "🔄 フォントキャッシュを更新中..."; \
+	(fc-cache -f  && echo "✅ フォントキャッシュ更新完了") || echo "⚠️  フォントキャッシュの更新をスキップ（システムが自動更新します）"; \
+	FINAL_COUNT=$$(fc-list | grep -i "IBM Plex Sans" | wc -l  || echo "0"); \
+	echo "🎉 インストール完了: $$FINAL_COUNT 個のIBM Plex Sansフォントが認識されています"; \
+	echo ""; \
+	echo "📋 インストールされたフォント一覧:"; \
+	fc-list | grep -i "IBM Plex Sans" | head -5 | sed 's/^/  /' || echo "  (フォント一覧の取得に失敗)"; \
+	if [ $$(fc-list | grep -i "IBM Plex Sans" | wc -l) -gt 5 ]; then \
+	echo "  ...他 $$(echo $$(($$FINAL_COUNT - 5))) 個"; \
+	fi; \
 	else \
-		echo "❌ IBM Plex フォントのダウンロードに失敗しました"; \
-		echo "ℹ️  インターネット接続を確認してください"; \
-		rm -rf plex-fonts.zip ; \
+	echo "❌ TTFファイルが見つかりません"; \
+	rm -rf plex-fonts.zip ibm-plex-sans ; \
+	fi; \
+	else \
+	echo "❌ 期待されるディレクトリ構造が見つかりません"; \
+	rm -rf plex-fonts.zip ibm-plex-sans ; \
+	fi; \
+	else \
+	echo "❌ ZIPファイルの展開に失敗しました"; \
+	rm -rf plex-fonts.zip ibm-plex-sans ; \
+	fi; \
+	else \
+	echo "❌ ダウンロードされたファイルが空または見つかりません"; \
+	rm -rf plex-fonts.zip ; \
+	fi; \
+	else \
+	echo "❌ IBM Plex フォントのダウンロードに失敗しました"; \
+	echo "ℹ️  インターネット接続を確認してください"; \
+	rm -rf plex-fonts.zip ; \
 	fi
 
 # Cica Nerd Fonts のインストール（単独実行用）
@@ -218,53 +218,53 @@ install-packages-cica-fonts:
 	EXISTING_FONTS=$$(fc-list | grep -i "Cica" | wc -l  || echo "0"); \
 	echo "🔍 現在認識されているCicaフォント数: $$EXISTING_FONTS"; \
 	if [ "$$EXISTING_FONTS" -lt 4 ]; then \
-		echo "📥 Cica フォントをダウンロード中..."; \
-		rm -rf cica-fonts.zip Cica_* ; \
-		CICA_VERSION=$$(curl -s https://api.github.com/repos/miiton/Cica/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$'  || echo "v5.0.3"); \
-		echo "📦 Cica バージョン: $$CICA_VERSION"; \
-		DOWNLOAD_URL="https://github.com/miiton/Cica/releases/download/$$CICA_VERSION/Cica_$${CICA_VERSION#v}.zip"; \
-		echo "🔗 ダウンロードURL: $$DOWNLOAD_URL"; \
-		if wget --timeout=30 "$$DOWNLOAD_URL" -O cica-fonts.zip ; then \
-			echo "✅ ダウンロード完了 ($$(ls -lh cica-fonts.zip | awk '{print $$5}'))"; \
-			if [ -f cica-fonts.zip ] && [ -s cica-fonts.zip ]; then \
-				echo "📂 ZIPファイルを展開中..."; \
-				if unzip -q cica-fonts.zip; then \
-					FONT_COUNT=$$(find . -maxdepth 1 -name "Cica*.ttf" | wc -l); \
-					echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
-					if [ "$$FONT_COUNT" -gt 0 ]; then \
-						echo "📋 フォントファイルをコピー中..."; \
-						cp Cica*.ttf $(HOME_DIR)/.local/share/fonts/cica/  && \
-						COPIED_COUNT=$$(ls -1 $(HOME_DIR)/.local/share/fonts/cica/Cica*.ttf | wc -l  || echo "0"); \
-						echo "✅ コピー完了: $$COPIED_COUNT 個のフォントファイル"; \
-						rm -rf cica-fonts.zip Cica*.ttf ; \
-						echo "🔄 フォントキャッシュを更新中..."; \
-						(fc-cache -f  && echo "✅ フォントキャッシュ更新完了") || echo "⚠️  フォントキャッシュの更新をスキップ（システムが自動更新します）"; \
-						FINAL_COUNT=$$(fc-list | grep -i "Cica" | wc -l  || echo "0"); \
-						echo "🎉 インストール完了: $$FINAL_COUNT 個のCicaフォントが認識されています"; \
-						echo ""; \
-						echo "📋 インストールされたフォント一覧:"; \
-						fc-list | grep -i "Cica" | sed 's/^/  /' || echo "  (フォント一覧の取得に失敗)"; \
-					else \
-						echo "❌ TTFファイルが見つかりません"; \
-						rm -rf cica-fonts.zip Cica*.ttf ; \
-					fi; \
-				else \
-					echo "❌ ZIPファイルの展開に失敗しました"; \
-					rm -rf cica-fonts.zip ; \
-				fi; \
-			else \
-				echo "❌ ダウンロードされたファイルが空または見つかりません"; \
-				rm -rf cica-fonts.zip ; \
-			fi; \
-		else \
-			echo "❌ Cica フォントのダウンロードに失敗しました"; \
-			echo "ℹ️  インターネット接続を確認してください"; \
-			echo "💡 手動インストール方法:"; \
-			echo "    1. https://github.com/miiton/Cica/releases にアクセス"; \
-			echo "    2. 最新版のCica_*.zipをダウンロード"; \
-			echo "    3. ダウンロード後、再度このコマンドを実行"; \
-			rm -rf cica-fonts.zip ; \
-		fi; \
+	echo "📥 Cica フォントをダウンロード中..."; \
+	rm -rf cica-fonts.zip Cica_* ; \
+	CICA_VERSION=$$(curl -s https://api.github.com/repos/miiton/Cica/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$'  || echo "v5.0.3"); \
+	echo "📦 Cica バージョン: $$CICA_VERSION"; \
+	DOWNLOAD_URL="https://github.com/miiton/Cica/releases/download/$$CICA_VERSION/Cica_$${CICA_VERSION#v}.zip"; \
+	echo "🔗 ダウンロードURL: $$DOWNLOAD_URL"; \
+	if wget --timeout=30 "$$DOWNLOAD_URL" -O cica-fonts.zip ; then \
+	echo "✅ ダウンロード完了 ($$(ls -lh cica-fonts.zip | awk '{print $$5}'))"; \
+	if [ -f cica-fonts.zip ] && [ -s cica-fonts.zip ]; then \
+	echo "📂 ZIPファイルを展開中..."; \
+	if unzip -q cica-fonts.zip; then \
+	FONT_COUNT=$$(find . -maxdepth 1 -name "Cica*.ttf" | wc -l); \
+	echo "📊 展開されたフォントファイル数: $$FONT_COUNT"; \
+	if [ "$$FONT_COUNT" -gt 0 ]; then \
+	echo "📋 フォントファイルをコピー中..."; \
+	cp Cica*.ttf $(HOME_DIR)/.local/share/fonts/cica/  && \
+	COPIED_COUNT=$$(ls -1 $(HOME_DIR)/.local/share/fonts/cica/Cica*.ttf | wc -l  || echo "0"); \
+	echo "✅ コピー完了: $$COPIED_COUNT 個のフォントファイル"; \
+	rm -rf cica-fonts.zip Cica*.ttf ; \
+	echo "🔄 フォントキャッシュを更新中..."; \
+	(fc-cache -f  && echo "✅ フォントキャッシュ更新完了") || echo "⚠️  フォントキャッシュの更新をスキップ（システムが自動更新します）"; \
+	FINAL_COUNT=$$(fc-list | grep -i "Cica" | wc -l  || echo "0"); \
+	echo "🎉 インストール完了: $$FINAL_COUNT 個のCicaフォントが認識されています"; \
+	echo ""; \
+	echo "📋 インストールされたフォント一覧:"; \
+	fc-list | grep -i "Cica" | sed 's/^/  /' || echo "  (フォント一覧の取得に失敗)"; \
 	else \
-		echo "✅ Cica フォントは既に十分にインストールされています ($$EXISTING_FONTS 個)"; \
+	echo "❌ TTFファイルが見つかりません"; \
+	rm -rf cica-fonts.zip Cica*.ttf ; \
+	fi; \
+	else \
+	echo "❌ ZIPファイルの展開に失敗しました"; \
+	rm -rf cica-fonts.zip ; \
+	fi; \
+	else \
+	echo "❌ ダウンロードされたファイルが空または見つかりません"; \
+	rm -rf cica-fonts.zip ; \
+	fi; \
+	else \
+	echo "❌ Cica フォントのダウンロードに失敗しました"; \
+	echo "ℹ️  インターネット接続を確認してください"; \
+	echo "💡 手動インストール方法:"; \
+	echo "    1. https://github.com/miiton/Cica/releases にアクセス"; \
+	echo "    2. 最新版のCica_*.zipをダウンロード"; \
+	echo "    3. ダウンロード後、再度このコマンドを実行"; \
+	rm -rf cica-fonts.zip ; \
+	fi; \
+	else \
+	echo "✅ Cica フォントは既に十分にインストールされています ($$EXISTING_FONTS 個)"; \
 	fi
