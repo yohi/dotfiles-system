@@ -127,7 +127,7 @@ endif
 		echo "⏭️  setxkbmap が見つからないため、キーボードレイアウト設定をスキップします。"; \
 	fi
 
-	@if command -v localectl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then \
+	@if command -v localectl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then \
 		sudo localectl set-keymap us || true; \
 		sudo localectl set-x11-keymap us || true; \
 	else \
