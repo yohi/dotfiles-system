@@ -1,7 +1,7 @@
 # システムレベルの基本設定
 system-setup:
 ifndef FORCE
-	@if [ -n "$(call check_marker,setup-system)" ] && $(call check_marker,setup-system) 2>/dev/null; then \
+	@result="$(call check_marker,setup-system)"; if [ -n "$$result" ] && $$result; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 		exit 0; \
 	fi
@@ -63,9 +63,9 @@ endif
 	
 	# フォント環境のセットアップ
 	@if [ "$$SKIP_FONTS" != "1" ]; then \
-	$(MAKE) fonts-setup; \
+		$(MAKE) fonts-setup || echo "⚠️  fonts-setup の実行中にエラーが発生しましたが、処理を続行します"; \
 	else \
-	echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
+		echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
 	fi
 	# 基本開発ツール
 	@echo "🔧 基本開発ツールをインストール中..."
