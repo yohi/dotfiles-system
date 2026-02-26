@@ -163,7 +163,7 @@ install-packages-ibm-plex-fonts:
 	echo "🔍 現在認識されているIBM Plex Sansフォント数: $$EXISTING_FONTS"; \
 	echo "📥 IBM Plex フォントをダウンロード中..."; \
 	rm -rf plex-fonts.zip ibm-plex-sans ; \
-	RELEASE_JSON=$$(curl -s https://api.github.com/repos/IBM/plex/releases/latest); \
+	RELEASE_JSON=$$(curl -s --connect-timeout 10 --max-time 30 https://api.github.com/repos/IBM/plex/releases/latest); \
 	PLEX_VERSION=$$(echo "$$RELEASE_JSON" | jq -r '.tag_name' 2>/dev/null || echo "$$RELEASE_JSON" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$' || echo "@ibm/plex-sans@1.1.0"); \
 	echo "📦 IBM Plex バージョン: $$PLEX_VERSION"; \
 	DOWNLOAD_URL=$$(echo "$$RELEASE_JSON" | jq -r '.assets[] | select(.name == "ibm-plex-sans.zip") | .browser_download_url' 2>/dev/null); \
@@ -194,7 +194,7 @@ install-packages-ibm-plex-fonts:
 	echo "📋 インストールされたフォント一覧:"; \
 	fc-list | grep -i "IBM Plex Sans" | head -5 | sed 's/^/  /' || echo "  (フォント一覧の取得に失敗)"; \
 	if [ $$(fc-list | grep -i "IBM Plex Sans" | wc -l) -gt 5 ]; then \
-	echo "  ...他 $$(echo $$(($$FINAL_COUNT - 5))) 個"; \
+	echo "  ...他 $$(($$FINAL_COUNT - 5)) 個"; \
 	fi; \
 	else \
 	echo "❌ TTFファイルが見つかりません"; \
@@ -228,7 +228,7 @@ install-packages-cica-fonts:
 	if [ "$$EXISTING_FONTS" -lt 4 ]; then \
 	echo "📥 Cica フォントをダウンロード中..."; \
 	rm -rf cica-fonts.zip Cica_* ; \
-	CICA_VERSION=$$(curl -s https://api.github.com/repos/miiton/Cica/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$'  || echo "v5.0.3"); \
+	CICA_VERSION=$$(curl -s --connect-timeout 10 --max-time 30 https://api.github.com/repos/miiton/Cica/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$$'  || echo "v5.0.3"); \
 	echo "📦 Cica バージョン: $$CICA_VERSION"; \
 	DOWNLOAD_URL="https://github.com/miiton/Cica/releases/download/$$CICA_VERSION/Cica_$${CICA_VERSION#v}.zip"; \
 	echo "🔗 ダウンロードURL: $$DOWNLOAD_URL"; \
