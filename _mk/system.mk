@@ -54,7 +54,12 @@ endif
 
 	# 日本語入力メソッド（mozc）のインストール
 	@echo "🇯🇵 日本語入力メソッド（mozc）をインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install ibus-mozc mozc-utils-gui || echo "⚠️  mozcのインストールに失敗しました（デスクトップ環境がない可能性があります）"
+	@rm -f /tmp/mozc_success
+	@if sudo DEBIAN_FRONTEND=noninteractive apt -y install ibus-mozc mozc-utils-gui; then \
+		touch /tmp/mozc_success; \
+	else \
+		echo "⚠️  mozcのインストールに失敗しました（デスクトップ環境がない可能性があります）"; \
+	fi
 
 	# IBusの設定
 	@if command -v gsettings >/dev/null 2>&1; then \
@@ -98,7 +103,7 @@ endif
 		https://www.ubuntulinux.jp/ubuntu-ja-archive-keyring.gpg; do \
 		key_file="/etc/apt/trusted.gpg.d/$$(basename $$key_url)"; \
 		tmp_key=$$(mktemp); \
-		if wget -qO "$$tmp_key" "$$key_url" && grep -q "BEGIN PGP" "$$tmp_key"; then \
+		if wget -qO "$$tmp_key" "$$key_url" && gpg --show-keys "$$tmp_key" >/dev/null 2>&1; then \
 			sudo tee "$$key_file" < "$$tmp_key" >/dev/null; \
 			rm -f "$$tmp_key"; \
 		else \
@@ -178,7 +183,12 @@ endif
 	@echo "✅ システムレベルの基本設定が完了しました。"
 	@echo "🌏 タイムゾーン: $$(timedatectl show --property=Timezone --value  || echo '取得に失敗')"
 	@echo "🌐 ロケール: $$(locale | grep LANG  || echo '取得に失敗')"
-	@echo "🇯🇵 日本語入力: mozc（IBus）がインストールされました"
+	@if [ -f /tmp/mozc_success ]; then \
+		echo "🇯🇵 日本語入力: mozc（IBus）がインストールされました"; \
+		rm -f /tmp/mozc_success; \
+	else \
+		echo "🇯🇵 日本語入力: mozc（IBus）のインストールはスキップまたは失敗しました"; \
+	fi
 	@echo "🧠 メモリ最適化: vm.swappiness=$$(cat /proc/sys/vm/swappiness  || echo 'unknown') に設定されました"
 	@echo ""
 	@echo "⚠️  重要：設定を反映するため、システムの再起動を推奨します。"
