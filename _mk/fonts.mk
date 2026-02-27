@@ -6,6 +6,7 @@ FONTS_DIR := $(HOME)/.local/share/fonts
 FONTS_TEMP_DIR := /tmp/dotfiles-fonts
 NERD_FONTS_VERSION := v3.1.1
 GOOGLE_FONTS_API := https://fonts.google.com/download?family=
+NERD_FONTS := JetBrainsMono FiraCode Hack DejaVuSansMono RobotoMono
 
 # PHONYターゲット
 .PHONY: fonts-setup fonts-install fonts-install-nerd fonts-install-japanese fonts-clean fonts-update fonts-list
@@ -21,60 +22,36 @@ fonts-install: fonts-install-nerd fonts-install-japanese ## 全種類のフォ�
 # Nerd Fontsのインストール
 fonts-install-nerd: ## Nerd Fonts (開発者向けアイコンフォント) をインストール
 	@echo "🔤 Nerd Fontsをインストール中..."
+	@if ! command -v unzip >/dev/null 2>&1; then \
+		echo "❌ エラー: 'unzip' コマンドが見つかりません。事前にインストールしてください。"; \
+		exit 1; \
+	fi
 	@mkdir -p $(FONTS_DIR) $(FONTS_TEMP_DIR)
 	@cd $(FONTS_TEMP_DIR) && \
-	echo "📥 JetBrainsMono Nerd Fontをダウンロード中..." && \
-	if curl -fLo JetBrainsMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/JetBrainsMono.zip"; then \
-		if [ -s JetBrainsMono.zip ]; then \
-			echo "✅ JetBrainsMono ダウンロード完了 ($$(ls -lh JetBrainsMono.zip | awk '{print $$5}'))"; \
+	for font in $(NERD_FONTS); do \
+		echo "📥 $$font Nerd Fontをダウンロード中..." && \
+		if curl -fLo "$$font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/$$font.zip"; then \
+			if [ -s "$$font.zip" ]; then \
+				size=$$(ls -lh "$$font.zip" | awk '{print $$5}'); \
+				echo "✅ $$font ダウンロード完了 ($$size)"; \
+			else \
+				echo "❌ エラー: $$font ファイルが空です"; \
+				exit 1; \
+			fi; \
 		else \
-			echo "❌ エラー: JetBrainsMono ファイルが空です"; \
+			echo "❌ エラー: $$font Nerd Fontのダウンロードに失敗しました"; \
+			echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/$$font.zip"; \
 			exit 1; \
 		fi; \
-	else \
-		echo "❌ エラー: JetBrainsMono Nerd Fontのダウンロードに失敗しました"; \
-		echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/JetBrainsMono.zip"; \
-		exit 1; \
-	fi && \
-	echo "📥 FiraCode Nerd Fontをダウンロード中..." && \
-	if curl -fLo FiraCode.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/FiraCode.zip"; then \
-		echo "✅ FiraCode ダウンロード完了"; \
-	else \
-		echo "❌ エラー: FiraCode Nerd Fontのダウンロードに失敗しました"; \
-		echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/FiraCode.zip"; \
-		exit 1; \
-	fi && \
-	echo "📥 Hack Nerd Fontをダウンロード中..." && \
-	if curl -fLo Hack.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/Hack.zip"; then \
-		echo "✅ Hack ダウンロード完了"; \
-	else \
-		echo "❌ エラー: Hack Nerd Fontのダウンロードに失敗しました"; \
-		echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/Hack.zip"; \
-		exit 1; \
-	fi && \
-	echo "📥 DejaVuSansMono Nerd Fontをダウンロード中..." && \
-	if curl -fLo DejaVuSansMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/DejaVuSansMono.zip"; then \
-		echo "✅ DejaVuSansMono ダウンロード完了"; \
-	else \
-		echo "❌ エラー: DejaVuSansMono Nerd Fontのダウンロードに失敗しました"; \
-		echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/DejaVuSansMono.zip"; \
-		exit 1; \
-	fi && \
-	echo "📥 RobotoMono Nerd Fontをダウンロード中..." && \
-	if curl -fLo RobotoMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/RobotoMono.zip"; then \
-		echo "✅ RobotoMono ダウンロード完了"; \
-	else \
-		echo "❌ エラー: RobotoMono Nerd Fontのダウンロードに失敗しました"; \
-		echo "URL: https://github.com/ryanoasis/nerd-fonts/releases/download/$(NERD_FONTS_VERSION)/RobotoMono.zip"; \
-		exit 1; \
-	fi && \
-    echo "🔍 ダウンロードされたファイルを確認します..."; \
-    ls -l && \
+	done && \
+	echo "🔍 ダウンロードされたファイルを確認します..."; \
+	ls -lh && \
 	echo "📂 フォントファイルを個別に展開中..." && \
-	for zipfile in JetBrainsMono.zip FiraCode.zip Hack.zip DejaVuSansMono.zip RobotoMono.zip; do \
+	for font in $(NERD_FONTS); do \
+		zipfile="$$font.zip"; \
 		if [ -f "$$zipfile" ]; then \
 			echo "🔍 $$zipfile を検証中..."; \
-			if unzip -t "$$zipfile" >/dev/null 2>&1; then \
+			if unzip -t "$$zipfile" > unzip_verify.log 2>&1; then \
 				echo "✅ $$zipfile 検証完了"; \
 				echo "🔓 $$zipfile を展開中..."; \
 				if unzip -o "$$zipfile" -d $(FONTS_DIR)/; then \
@@ -84,15 +61,20 @@ fonts-install-nerd: ## Nerd Fonts (開発者向けアイコンフォント) を�
 					exit 1; \
 				fi; \
 			else \
-				echo "❌ エラー: $$zipfile は破損しています"; \
-					exit 1; \
+				echo "❌ エラー: $$zipfile は破損しているか、zip形式ではありません"; \
+				head -n 20 unzip_verify.log; \
+				if file "$$zipfile" | grep -q "HTML"; then \
+					echo "⚠️ 警告: $$zipfile の中身がHTMLのようです。ダウンロードURLが間違っているか、リダイレクトに失敗した可能性があります。"; \
+				fi; \
+				exit 1; \
 			fi; \
 		else \
-				echo "❌ エラー: $$zipfile が見つかりません（ダウンロード失敗の可能性）"; \
-				exit 1; \
+			echo "❌ エラー: $$zipfile が見つかりません（ダウンロード失敗の可能性）"; \
+			exit 1; \
 		fi; \
 	done && \
-	echo "✅ Nerd Fontsのインストールが完了しました"
+	rm -f unzip_verify.log
+	@echo "✅ Nerd Fontsのインストールが完了しました"
 
 # 日本語フォントのインストール
 fonts-install-japanese: ## 日本語フォントをインストール

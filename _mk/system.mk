@@ -44,33 +44,48 @@ endif
 	@sudo locale-gen ja_JP.UTF-8 || true
 	@sudo update-locale LANG=ja_JP.UTF-8 LANGUAGE=ja_JP:ja LC_ALL=ja_JP.UTF-8 || true
 
+	# 基本開発ツール
+	@echo "🔧 基本開発ツールをインストール中..."
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
+
 	# 日本語フォントのインストール
 	@echo "🔤 日本語フォントをインストール中..."
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install fonts-noto-cjk fonts-noto-cjk-extra || true
 
 	# 日本語入力メソッド（mozc）のインストール
 	@echo "🇯🇵 日本語入力メソッド（mozc）をインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install ibus-mozc mozc-utils-gui || true
+	@rm -f /tmp/mozc_success
+	@if sudo DEBIAN_FRONTEND=noninteractive apt -y install ibus-mozc mozc-utils-gui; then \
+		touch /tmp/mozc_success; \
+	else \
+		echo "⚠️  mozcのインストールに失敗しました（デスクトップ環境がない可能性があります）"; \
+	fi
 
 	# IBusの設定
-	@echo "⌨️  IBus入力メソッドを設定中..."
-	@gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'mozc-jp')]"  || true
-	@gsettings set org.gnome.desktop.input-sources xkb-options "['ctrl:nocaps']"  || true
-	
+	@if command -v gsettings >/dev/null 2>&1; then \
+		echo "⌨️  IBus入力メソッドを設定中..."; \
+		gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'mozc-jp')]" || true; \
+		gsettings set org.gnome.desktop.input-sources xkb-options "['ctrl:nocaps']" || true; \
+	else \
+		echo "⏭️  gsettings が見つからないため、IBusの設定をスキップします。"; \
+	fi
+
 	# IBusサービスの有効化
-	@systemctl --user enable ibus-daemon || true
-	@systemctl --user start ibus-daemon || true
-	
+	@if command -v systemctl >/dev/null 2>&1 && systemctl --user >/dev/null 2>&1; then \
+		echo "⚙️  IBusサービスを有効化中..."; \
+		systemctl --user enable ibus-daemon || true; \
+		systemctl --user start ibus-daemon || true; \
+	else \
+		echo "⏭️  systemctl --user が利用できないため、IBusサービスの有効化をスキップします。"; \
+	fi
+
 	# フォント環境のセットアップ
 	@if [ "$$SKIP_FONTS" != "1" ]; then \
 		$(MAKE) fonts-setup || echo "⚠️  fonts-setup の実行中にエラーが発生しましたが、処理を続行します"; \
 	else \
 		echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
 	fi
-	# 基本開発ツール
-	@echo "🔧 基本開発ツールをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
-	
+
 	# ユーザーディレクトリ管理パッケージをインストール
 	@sudo DEBIAN_FRONTEND=noninteractive apt -y install xdg-user-dirs || echo "⚠️  xdg-user-dirs のインストールに失敗しましたが、処理を続行します"
 
@@ -83,25 +98,50 @@ endif
 	
 	# Ubuntu Japanese
 	@echo "🇯🇵 Ubuntu Japanese環境を設定中..."
-	@sudo wget https://www.ubuntulinux.jp/ubuntu-jp-ppa-keyring.gpg -P /etc/apt/trusted.gpg.d/  || true
-	@sudo wget https://www.ubuntulinux.jp/ubuntu-ja-archive-keyring.gpg -P /etc/apt/trusted.gpg.d/  || true
-	@sudo wget https://www.ubuntulinux.jp/sources.list.d/$$(lsb_release -cs).list -O /etc/apt/sources.list.d/ubuntu-ja.list  || true
-	@sudo DEBIAN_FRONTEND=noninteractive apt update  || true
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y ubuntu-defaults-ja  || echo "⚠️  Ubuntu Japanese のインストールに失敗しましたが、処理を続行します"
+	@for key_url in \
+		https://www.ubuntulinux.jp/ubuntu-jp-ppa-keyring.gpg \
+		https://www.ubuntulinux.jp/ubuntu-ja-archive-keyring.gpg; do \
+		key_file="/etc/apt/trusted.gpg.d/$$(basename $$key_url)"; \
+		tmp_key=$$(mktemp); \
+		if wget -qO "$$tmp_key" "$$key_url" && gpg --show-keys "$$tmp_key" >/dev/null 2>&1; then \
+			sudo tee "$$key_file" < "$$tmp_key" >/dev/null; \
+			rm -f "$$tmp_key"; \
+		else \
+			echo "❌ エラー: $$key_url から有効なGPGキーを取得できませんでした"; \
+			rm -f "$$tmp_key"; \
+			exit 1; \
+		fi; \
+	done
+	@REL_CODE=$$(lsb_release -cs); \
+	if wget --spider https://www.ubuntulinux.jp/sources.list.d/$$REL_CODE.list 2>/dev/null; then \
+		sudo wget https://www.ubuntulinux.jp/sources.list.d/$$REL_CODE.list -O /etc/apt/sources.list.d/ubuntu-ja.list || true; \
+		sudo DEBIAN_FRONTEND=noninteractive apt update || true; \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y ubuntu-defaults-ja || echo "⚠️  Ubuntu Japanese のインストールに失敗しましたが、処理を続行します"; \
+	else \
+		echo "⚠️  Ubuntu Japanese のリポジトリリスト ($$REL_CODE.list) が見つかりません。スキップします。"; \
+	fi
 
 	# キーボード設定
 	@echo "⌨️  キーボードレイアウトを設定中..."
 
 	# キーボードレイアウトを英語（US）に設定
-	@setxkbmap us || true
-	@sudo localectl set-keymap us || true
-	@sudo localectl set-x11-keymap us || true
+	@if command -v setxkbmap >/dev/null 2>&1; then \
+		setxkbmap us || true; \
+		setxkbmap -option "ctrl:nocaps" || true; \
+	else \
+		echo "⏭️  setxkbmap が見つからないため、キーボードレイアウト設定をスキップします。"; \
+	fi
 
-	# GNOME環境の場合、入力ソースは既にmozc設定で行われているためスキップ
+	@if command -v localectl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then \
+		sudo localectl set-keymap us || true; \
+		sudo localectl set-x11-keymap us || true; \
+	else \
+		echo "⏭️  localectl または systemd が利用できないため、システムキーマップの設定をスキップします。"; \
+	fi
+		# GNOME環境の場合、入力ソースは既にmozc設定で行われているためスキップ
 	@echo "✅ GNOME入力ソースはmozc設定で設定されています"
 
 	# CapsLock -> Ctrl
-	@setxkbmap -option "ctrl:nocaps" || true
 	@sudo update-initramfs -u || true
 
 	@echo "✅ キーボードレイアウトが英語（US）に設定されました"
@@ -143,7 +183,12 @@ endif
 	@echo "✅ システムレベルの基本設定が完了しました。"
 	@echo "🌏 タイムゾーン: $$(timedatectl show --property=Timezone --value  || echo '取得に失敗')"
 	@echo "🌐 ロケール: $$(locale | grep LANG  || echo '取得に失敗')"
-	@echo "🇯🇵 日本語入力: mozc（IBus）がインストールされました"
+	@if [ -f /tmp/mozc_success ]; then \
+		echo "🇯🇵 日本語入力: mozc（IBus）がインストールされました"; \
+		rm -f /tmp/mozc_success; \
+	else \
+		echo "🇯🇵 日本語入力: mozc（IBus）のインストールはスキップまたは失敗しました"; \
+	fi
 	@echo "🧠 メモリ最適化: vm.swappiness=$$(cat /proc/sys/vm/swappiness  || echo 'unknown') に設定されました"
 	@echo ""
 	@echo "⚠️  重要：設定を反映するため、システムの再起動を推奨します。"
