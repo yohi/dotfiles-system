@@ -1,5 +1,8 @@
 REPO_ROOT ?= $(CURDIR)
 .DEFAULT_GOAL := setup
+
+# Include individual modules
+include _mk/idempotency.mk
 include _mk/system.mk
 include _mk/install.mk
 include _mk/fonts.mk

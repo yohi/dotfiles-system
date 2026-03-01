@@ -152,7 +152,11 @@ endif
 
 	# 基本パッケージ
 	@echo "📦 基本パッケージをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive if [ "$$SKIP_GUI" != "1" ]; then sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel; else echo "⏭️ SKIP_GUI=1 のため基本GUIパッケージをスキップ"; fi  || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処理を続行します"
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処理を続行します"; \
+	else \
+		echo "⏭️ SKIP_GUI=1 のため基本GUIパッケージをスキップ"; \
+	fi
 
 	# AppImage実行に必要なFUSEパッケージ
 	@echo "📦 AppImage実行用のFUSEパッケージをインストール中..."
