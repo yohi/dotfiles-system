@@ -116,7 +116,11 @@ endif
 	if wget --spider https://www.ubuntulinux.jp/sources.list.d/$$REL_CODE.list 2>/dev/null; then \
 		sudo wget https://www.ubuntulinux.jp/sources.list.d/$$REL_CODE.list -O /etc/apt/sources.list.d/ubuntu-ja.list || true; \
 		sudo DEBIAN_FRONTEND=noninteractive apt update || true; \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y ubuntu-defaults-ja || echo "⚠️  Ubuntu Japanese のインストールに失敗しましたが、処理を続行します"; \
+		if [ "$$SKIP_GUI" != "1" ]; then \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y ubuntu-defaults-ja || echo "⚠️  Ubuntu Japanese のインストールに失敗しましたが、処理を続行します"; \
+		else \
+			echo "⏭️ SKIP_GUI=1 のため ubuntu-defaults-ja をスキップ"; \
+		fi; \
 	else \
 		echo "⚠️  Ubuntu Japanese のリポジトリリスト ($$REL_CODE.list) が見つかりません。スキップします。"; \
 	fi
@@ -148,7 +152,11 @@ endif
 
 	# 基本パッケージ
 	@echo "📦 基本パッケージをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel  || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処理を続行します"
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処理を続行します"; \
+	else \
+		echo "⏭️ SKIP_GUI=1 のため基本GUIパッケージをスキップ"; \
+	fi
 
 	# AppImage実行に必要なFUSEパッケージ
 	@echo "📦 AppImage実行用のFUSEパッケージをインストール中..."
