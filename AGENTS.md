@@ -1,3 +1,8 @@
+# Agent Instructions for dotfiles-system
+
+> [!IMPORTANT]
+> 共通の基本ルールは [DOTFILES_COMMON_RULES.md](./DOTFILES_COMMON_RULES.md) を参照してください。
+
 # PROJECT KNOWLEDGE BASE
 
 **Repository:** dotfiles-system
@@ -8,6 +13,8 @@
 ```text
 dotfiles-system/
 ├── _mk/                         # Makefile sub-targets
+│   ├── core.mk                 # -> common-mk/core.mk (symlink)
+│   ├── help.mk                 # -> common-mk/help.mk (symlink)
 │   ├── clipboard.mk            # Clipboard manager setup
 │   ├── fonts.mk                # Font installation
 │   ├── install.mk              # Package installation
