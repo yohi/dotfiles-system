@@ -13,6 +13,8 @@
 ```text
 dotfiles-system/
 ├── _mk/                         # Makefile sub-targets
+│   ├── core.mk                 # -> common-mk/core.mk (symlink)
+│   ├── help.mk                 # -> common-mk/help.mk (symlink)
 │   ├── clipboard.mk            # Clipboard manager setup
 │   ├── fonts.mk                # Font installation
 │   ├── install.mk              # Package installation
