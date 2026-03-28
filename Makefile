@@ -5,13 +5,11 @@
 
 # Component-specific logic
 
-# Orchestrator core configuration
-# Note: These are symlinked from ../../common-mk/ when managed by dotfiles-core
 
-# Component-specific logic
+
+
 
 REPO_ROOT ?= $(CURDIR)
-.DEFAULT_GOAL := setup
 
 # Include individual modules
 include _mk/idempotency.mk
@@ -22,12 +20,12 @@ include _mk/clipboard.mk
 include _mk/memory.mk
 
 .PHONY: link
-link:
+link: ## シンボリックリンクを展開し、dotfiles を配置します
 	@echo "==> Linking dotfiles-system"
 	mkdir -p $(HOME)
 	ln -sfn $(REPO_ROOT)/Brewfile $(HOME)/.Brewfile
 
 .PHONY: setup
-setup:
+setup: ## セットアップ（依存関係、設定適用）を一括実行します
 	$(MAKE) system-setup
 	@echo "==> Setting up dotfiles-system"
