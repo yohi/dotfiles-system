@@ -4,14 +4,14 @@ ifneq ($(wildcard _mk/core.mk),)
 include _mk/core.mk
 else
 $(warning "missing _mk/core.mk - please ensure symlink or run setup")
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := setup
 endif
 
 ifneq ($(wildcard _mk/help.mk),)
 include _mk/help.mk
 else
 $(warning "missing _mk/help.mk - please ensure symlink or run setup")
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := setup
 endif
 
 # Component-specific logic
