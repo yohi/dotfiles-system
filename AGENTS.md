@@ -1,3 +1,8 @@
+# Agent Instructions for dotfiles-system
+
+> [!IMPORTANT]
+> 共通の基本ルールは [DOTFILES_COMMON_RULES.md](./DOTFILES_COMMON_RULES.md) を参照してください。
+
 # PROJECT KNOWLEDGE BASE
 
 **Repository:** dotfiles-system
