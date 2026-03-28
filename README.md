@@ -1,15 +1,16 @@
 # dotfiles-system
 
-システム全体の設定（パッケージ管理、メモリ最適化、モニタリングスクリプト、セキュリティチェッカー）を管理するコンポーネントリポジトリです。
+システム全体の設定（パッケージ管理、メモリ最適化、モニタリングスクリプト、セキュリティチェッカー）を管理 するコンポーネントリポジトリです。
 [dotfiles-core](https://github.com/yohi/dotfiles-core) と連携して動作します。
 
+## 管理と依存関係
 
+本リポジトリは [dotfiles-core](https://github.com/yohi/dotfiles-core) によって管理されるコンポーネントの一つです。
 
-## ⚠️  Standalone Usage Note
-This repository depends on common Makefile fragments and rules from [dotfiles-core](https://github.com/yohi/dotfiles-core).
-When using this repository standalone, you must manually set up the `common-mk` dependency:
+### ⚠️ 単体使用時の注意点
+本リポジトリは `dotfiles-core` の共通 Makefile ルール（`common-mk`）に依存しています。単体で使用（クローン）する場合は、以下の手順が必要です：
 
-1. Clone or copy the `common-mk` directory from the [dotfiles-core](https://github.com/yohi/dotfiles-core) repository.
-2. Place it such that it's available at `../common-mk/` relative to this repository root.
+1. `common-mk` ディレクトリを本リポジトリの親ディレクトリに配置するか、パスを適切に設定してください。
+2. `make help` を実行して、正しく設定されていることを確認してください。
 
-Alternatively, use `dotfiles-core` to manage the entire setup automatically via `make setup`.
+推奨される使用方法は、`dotfiles-core` から `make setup` を実行することです。

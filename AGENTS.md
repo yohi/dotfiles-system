@@ -8,6 +8,11 @@
 **Repository:** dotfiles-system
 **Role:** System-level configuration — package management, fonts, clipboard, memory optimization, security, Docker, and maintenance scripts
 
+## COMPONENT LAYOUT CONVENTION
+
+This repository is part of the **dotfiles polyrepo** orchestrated by [dotfiles-core](https://github.com/yohi/dotfiles-core).
+All changes MUST comply with the central layout rules. Please refer to the central [ARCHITECTURE.md](https://raw.githubusercontent.com/yohi/dotfiles-core/refs/heads/master/docs/ARCHITECTURE.md) for the full, authoritative rules and constraints.
+
 ## STRUCTURE
 
 ```text
@@ -41,11 +46,6 @@ dotfiles-system/
 ├── Brewfile                    # [Link Target] Homebrew package list → ~/.Brewfile
 └── Makefile                    # Setup entry point (includes _mk/*.mk)
 ```
-
-## COMPONENT LAYOUT CONVENTION
-
-This repository is part of the **dotfiles polyrepo** orchestrated by `dotfiles-core`.
-All changes MUST comply with the central layout rules. Please refer to the central [ARCHITECTURE.md](https://raw.githubusercontent.com/yohi/dotfiles-core/refs/heads/master/docs/ARCHITECTURE.md) for the full, authoritative rules and constraints.
 
 ## THIS COMPONENT — SPECIAL NOTES
 
