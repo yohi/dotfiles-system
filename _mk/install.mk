@@ -246,7 +246,7 @@ install-packages-playwright:
 	@echo "🎭 Playwright E2Eテストフレームワークのインストールを開始..."
 
 	# Node.jsの確認
-	@$(MAKE) check-nodejs
+	@$(MAKE) check-nodejs REQUIRE_NODEJS=1
 
 	# npmの確認
 	@echo "🔍 npm の確認中..."
