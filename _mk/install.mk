@@ -1,3 +1,11 @@
+# システム全体のパッケージインストール
+system-install:
+	@echo "📦 システムパッケージの一括インストールを開始..."
+	$(MAKE) install-packages-homebrew
+	$(MAKE) install-packages-apps
+	$(MAKE) install-packages-deb
+	@echo "✅ システムパッケージの一括インストールが完了しました。"
+
 # Homebrewのインストール
 install-packages-homebrew:
 	@if $(call check_command,brew); then \
