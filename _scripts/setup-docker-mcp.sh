@@ -19,7 +19,7 @@ fi
 
 if [[ "$#" -gt 0 ]]; then
   echo "❌ エラー: 不明な引数です: $*"
-  echo "使用方法: bash scripts/setup-docker-mcp.sh [--allow-jsonc-overwrite]"
+  echo "使用方法: bash _scripts/setup-docker-mcp.sh [--allow-jsonc-overwrite]"
   exit 1
 fi
 

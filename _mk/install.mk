@@ -1,3 +1,11 @@
+# システム全体のパッケージインストール
+system-install:
+	@echo "📦 システムパッケージの一括インストールを開始..."
+	$(MAKE) install-packages-homebrew
+	$(MAKE) install-packages-apps
+	$(MAKE) install-packages-deb
+	@echo "✅ システムパッケージの一括インストールが完了しました。"
+
 # Homebrewのインストール
 install-packages-homebrew:
 	@if $(call check_command,brew); then \
@@ -246,7 +254,7 @@ install-packages-playwright:
 	@echo "🎭 Playwright E2Eテストフレームワークのインストールを開始..."
 
 	# Node.jsの確認
-	@$(MAKE) check-nodejs
+	@$(MAKE) check-nodejs REQUIRE_NODEJS=1
 
 	# npmの確認
 	@echo "🔍 npm の確認中..."
@@ -446,11 +454,11 @@ install-packages-chrome-beta:
 
 # ========================================
 # 後方互換性のためのエイリアス (一部のみここに定義)
-# ほとんどの後方互換エイリアスは mk/deprecated-targets.mk で一元管理されています。
+# ほとんどの後方互換エイリアスは _mk/deprecated-targets.mk で一元管理されています。
 # ========================================
 
 # ここでは、単純な転送のみが必要な少数のエイリアスのみを定義しています。
-# 詳細な非推奨ポリシー（警告、期限など）は mk/deprecated-targets.mk を参照してください。
+# 詳細な非推奨ポリシー（警告、期限など）は _mk/deprecated-targets.mk を参照してください。
 
 # SuperCopilot Framework for VSCode のインストール
 install-packages-vscode-supercopilot:

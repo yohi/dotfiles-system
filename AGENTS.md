@@ -1,5 +1,16 @@
 # Agent Instructions for dotfiles-system
 
+
+## COMPONENT LAYOUT CONVENTION
+
+This repository is part of the **dotfiles polyrepo** managed by [dotfiles-core](https://github.com/yohi/dotfiles).
+
+### ⚠️ CRITICAL: SYMBOLIC LINK & STANDALONE USAGE
+- **Standalone usage is NOT supported.** This repository depends on the central `common-mk` rules.
+- **Symbolic Links:** This repository relies on symbolic links to `common-mk`. **NEVER** suggest or perform a replacement of these symbolic links with physical files/directories. 
+- **SSOT:** Always respect the "Single Source of Truth" principle. Shared logic resides in `dotfiles-core`, and components must remain thin wrappers or specific configurations.
+- **Architectural Compliance:** All modifications must adhere to the layout defined in the central [ARCHITECTURE.md](https://github.com/yohi/dotfiles/blob/master/docs/ARCHITECTURE.md).
+
 > [!IMPORTANT]
 > 共通の基本ルールは [DOTFILES_COMMON_RULES.md](./DOTFILES_COMMON_RULES.md) を参照してください。
 
@@ -41,11 +52,6 @@ dotfiles-system/
 ├── Brewfile                    # [Link Target] Homebrew package list → ~/.Brewfile
 └── Makefile                    # Setup entry point (includes _mk/*.mk)
 ```
-
-## COMPONENT LAYOUT CONVENTION
-
-This repository is part of the **dotfiles polyrepo** orchestrated by `dotfiles-core`.
-All changes MUST comply with the central layout rules. Please refer to the central [ARCHITECTURE.md](https://raw.githubusercontent.com/yohi/dotfiles-core/refs/heads/master/docs/ARCHITECTURE.md) for the full, authoritative rules and constraints.
 
 ## THIS COMPONENT — SPECIAL NOTES
 
