@@ -1,39 +1,22 @@
-# Orchestrator core configuration
-# Note: These are symlinked from ../../common-mk/ when managed by dotfiles-core
-ifneq ($(wildcard _mk/core.mk),)
 include _mk/core.mk
-else
-$(warning "missing _mk/core.mk - please ensure symlink or run setup")
-.DEFAULT_GOAL := setup
-endif
-
-ifneq ($(wildcard _mk/help.mk),)
 include _mk/help.mk
-else
-$(warning "missing _mk/help.mk - please ensure symlink or run setup")
-.DEFAULT_GOAL := setup
-endif
-
-# Component-specific logic
-
-
-REPO_ROOT ?= $(CURDIR)
 
 # Include individual modules
-include _mk/idempotency.mk
-include _mk/system.mk
-include _mk/install.mk
-include _mk/fonts.mk
-include _mk/clipboard.mk
-include _mk/memory.mk
+-include _mk/idempotency.mk
+-include _mk/system.mk
+-include _mk/install.mk
+-include _mk/fonts.mk
+-include _mk/clipboard.mk
+-include _mk/memory.mk
 
-.PHONY: link
-link: ## シンボリックリンクを展開し、dotfiles を配置します
-	@echo "==> Linking dotfiles-system"
-	mkdir -p $(HOME)
-	ln -sfn $(REPO_ROOT)/Brewfile $(HOME)/.Brewfile
+install: install-system ## System 関連のインストール
+setup: setup-system ## System の設定適用
 
-.PHONY: setup
-setup: ## セットアップ（依存関係、設定適用）を一括実行します
-	$(MAKE) system-setup
+install-system:
+	@echo "==> Installing dotfiles-system"
+
+setup-system:
 	@echo "==> Setting up dotfiles-system"
+	mkdir -p $(HOME)
+	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile
+	$(MAKE) system-setup
