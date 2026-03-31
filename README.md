@@ -1,20 +1,16 @@
 # dotfiles-system
 
+## 管理と共存関係
+
+本リポジトリは [dotfiles-core](https://github.com/yohi/dotfiles) によって管理されるコンポーネントの一つです。
+
+### ⚠️ 使用時の注意点
+本リポジトリは `dotfiles-core` の共通 Makefile ルール（`common-mk`）に依存しており、実行時には `common-mk` へのシンボリックリンクが必要です。そのため、**本リポジトリ単体での使用（クローンしての利用）はサポートされていません。**
+
+推奨される使用方法は、`dotfiles-core` リポジトリから `make setup` を実行し、適切なディレクトリ構造とシンボリックリンクが構成された状態で利用することです。
+
 システム全体の設定（パッケージ管理、メモリ最適化、モニタリングスクリプト、セキュリティチェッカー）を管理するコンポーネントリポジトリです。
 [dotfiles-core](https://github.com/yohi/dotfiles-core) と連携して動作します。
-
-## 管理と依存関係
-
-本リポジトリは [dotfiles-core](https://github.com/yohi/dotfiles-core) によって管理されるコンポーネントの一つです。
-
-### ⚠️ 単体使用時の注意点
-本リポジトリは `dotfiles-core` の共通 Makefile ルール（`common-mk`）に依存しています。単体で使用（クローン）する場合は、以下の手順が必要です：
-
-1. [dotfiles-core](https://github.com/yohi/dotfiles-core) リポジトリから `common-mk` ディレクトリをクローンまたはコピーし、本リポジトリの親ディレクトリ（`../common-mk/`）に配置するか、親ディレクトリへシンボリックリンクを作成してください。
-   - ※ `Makefile` は `_mk/*.mk` を固定パスで include して動作するため、パスの変更はサポートされていません。
-2. `make help` を実行して、正しく設定されていることを確認してください。
-
-推奨される使用方法は、`dotfiles-core` から `make setup` を実行することです。
 
 ## ディレクトリ構成
 
@@ -24,6 +20,7 @@
 ├── README.md
 ├── AGENTS.md
 ├── Brewfile                # Homebrew package list
+├── _docs/                  # Documentation & Reports
 ├── _mk/                    # Makefile sub-targets
 ├── _scripts/               # System management/optimization
 └── logid/                  # Logiops mouse configuration
