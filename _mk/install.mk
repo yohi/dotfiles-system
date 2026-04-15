@@ -135,7 +135,7 @@ install-packages-fuse:
 # Brewfileを使用してアプリケーションをインストール
 install-packages-apps:
 ifndef FORCE
-	@if [ -n "$(call check_marker,install-packages-apps)" ] && $(call check_marker,install-packages-apps) 2>/dev/null; then \
+	@if $(call check_marker,install-packages-apps,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-apps)"; \
 		exit 0; \
 	fi
@@ -155,7 +155,7 @@ endif
 # DEBパッケージをインストール（IDE・ブラウザ含む）
 install-packages-deb:
 ifndef FORCE
-	@if [ -n "$(call check_marker,install-packages-deb)" ] && $(call check_marker,install-packages-deb) 2>/dev/null; then \
+	@if $(call check_marker,install-packages-deb,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-deb)"; \
 		exit 0; \
 	fi
@@ -238,6 +238,12 @@ endif
 		echo "✅ WezTerm は既にインストールされています"; \
 	fi
 
+	# Google Cloud CLI のインストール
+	@$(MAKE) install-packages-gcloud
+
+	# Google Workspace CLI のインストール
+	@$(MAKE) install-packages-workspace-cli
+
 	@$(call create_marker,install-packages-deb,N/A)
 	@echo "✅ DEBパッケージのインストールが完了しました"
 	@echo "📋 インストール完了項目:"
@@ -248,6 +254,8 @@ endif
 	@echo "   - FUSE（AppImage実行用）"
 	@echo "   - Cursor IDE"
 	@echo "   - WezTerm"
+	@echo "   - Google Cloud CLI"
+	@echo "   - Google Workspace CLI"
 
 # Playwright E2Eテストフレームワークのインストール
 install-packages-playwright:
@@ -512,6 +520,41 @@ system-info:
 	@echo ""; \
 	@echo "🔄 環境変数:"
 	@printenv | sort
+
+# Google Cloud CLI のインストール
+install-packages-gcloud:
+	@echo "☁️  Google Cloud CLI のインストール中..."
+	@if ! command -v gcloud >/dev/null 2>&1; then \
+		echo "📥 Google Cloud GPGキーとリポジトリを追加中..."; \
+		sudo apt-get update -q; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates gnupg curl; \
+		curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg; \
+		echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list; \
+		sudo apt-get update -q && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y google-cloud-cli; \
+	else \
+		echo "✅ Google Cloud CLI は既にインストールされています"; \
+	fi
+	@echo "✅ Google Cloud CLI のインストールが完了しました"
+
+# Google Workspace CLI (gw) のインストール
+install-packages-workspace-cli:
+	@echo "📂 Google Workspace CLI のインストール中..."
+	@if ! command -v gw >/dev/null 2>&1; then \
+		echo "📥 最新の Google Workspace CLI バイナリを取得中..."; \
+		LATEST_VERSION=$$(curl -s https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); \
+		echo "🔍 最新バージョン: $$LATEST_VERSION"; \
+		TEMP_DIR=$$(mktemp -d); \
+		ARCH=$$(uname -m); \
+		if [ "$$ARCH" = "x86_64" ]; then ARCH_LABEL="amd64"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_LABEL="arm64"; else ARCH_LABEL="amd64"; fi; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz" -o "$$TEMP_DIR/gw.tar.gz"; \
+		tar -xzf "$$TEMP_DIR/gw.tar.gz" -C "$$TEMP_DIR" 2>/dev/null || true; \
+		find "$$TEMP_DIR" -type f -name "gw" -exec sudo mv {} /usr/local/bin/gw \;; \
+		sudo chmod +x /usr/local/bin/gw; \
+		rm -rf "$$TEMP_DIR"; \
+	else \
+		echo "✅ Google Workspace CLI は既にインストールされています"; \
+	fi
+	@echo "✅ Google Workspace CLI のインストールが完了しました"
 
 # インストール済みパッケージのリスト表示
 list-installed-packages:
