@@ -120,7 +120,11 @@ install-packages-fuse:
 
 	# FUSEユーザー権限の設定
 	@echo "👤 FUSEユーザー権限を設定中..."
-	@sudo usermod -a -G fuse $(USER) || true
+	@if getent group fuse >/dev/null 2>&1; then \
+		sudo usermod -a -G fuse $(USER) || true; \
+	else \
+		echo "ℹ️  fuse グループが存在しないため、権限設定をスキップします（現代の環境では不要な場合があります）"; \
+	fi
 	@sudo chmod +x /usr/bin/fusermount 2>/dev/null || true
 	@sudo chmod u+s /usr/bin/fusermount 2>/dev/null || true
 	@sudo chmod +x /usr/bin/fusermount3 2>/dev/null || true
@@ -256,6 +260,26 @@ endif
 	@echo "   - WezTerm"
 	@echo "   - Google Cloud CLI"
 	@echo "   - Google Workspace CLI"
+
+# Cursor IDE のインストール
+install-packages-cursor:
+	@echo "💻 Cursor IDE のインストールを開始..."
+	@if ! command -v cursor >/dev/null 2>&1; then \
+		echo "📥 Cursor AppImage をダウンロード中..."; \
+		TEMP_DIR=$$(mktemp -d); \
+		if wget -q --show-progress "https://downloader.cursor.sh/linux/appImage/x64" -O "$$TEMP_DIR/cursor.appimage"; then \
+			sudo mv "$$TEMP_DIR/cursor.appimage" /usr/local/bin/cursor; \
+			sudo chmod +x /usr/local/bin/cursor; \
+			echo "✅ Cursor IDE が /usr/local/bin/cursor にインストールされました"; \
+		else \
+			echo "❌ Cursor のダウンロードに失敗しました"; \
+			rm -rf "$$TEMP_DIR"; \
+			exit 1; \
+		fi; \
+		rm -rf "$$TEMP_DIR"; \
+	else \
+		echo "✅ Cursor IDE は既にインストールされています"; \
+	fi
 
 # Playwright E2Eテストフレームワークのインストール
 install-packages-playwright:
