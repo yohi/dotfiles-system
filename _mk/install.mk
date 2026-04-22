@@ -120,7 +120,11 @@ install-packages-fuse:
 
 	# FUSEユーザー権限の設定
 	@echo "👤 FUSEユーザー権限を設定中..."
-	@sudo usermod -a -G fuse $(USER) || true
+	@if getent group fuse >/dev/null 2>&1; then \
+		sudo usermod -a -G fuse $(USER) || true; \
+	else \
+		echo "ℹ️  fuse グループが存在しないため、権限設定をスキップします（現代の環境では不要な場合があります）"; \
+	fi
 	@sudo chmod +x /usr/bin/fusermount 2>/dev/null || true
 	@sudo chmod u+s /usr/bin/fusermount 2>/dev/null || true
 	@sudo chmod +x /usr/bin/fusermount3 2>/dev/null || true
@@ -135,7 +139,7 @@ install-packages-fuse:
 # Brewfileを使用してアプリケーションをインストール
 install-packages-apps:
 ifndef FORCE
-	@if [ -n "$(call check_marker,install-packages-apps)" ] && $(call check_marker,install-packages-apps) 2>/dev/null; then \
+	@if $(call check_marker,install-packages-apps,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-apps)"; \
 		exit 0; \
 	fi
@@ -155,7 +159,7 @@ endif
 # DEBパッケージをインストール（IDE・ブラウザ含む）
 install-packages-deb:
 ifndef FORCE
-	@if [ -n "$(call check_marker,install-packages-deb)" ] && $(call check_marker,install-packages-deb) 2>/dev/null; then \
+	@if $(call check_marker,install-packages-deb,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-deb)"; \
 		exit 0; \
 	fi
@@ -238,6 +242,11 @@ endif
 		echo "✅ WezTerm は既にインストールされています"; \
 	fi
 
+	# Google Cloud CLI のインストール
+	@$(MAKE) install-packages-gcloud
+
+	# Google Workspace CLI (gws) のインストール
+	@$(MAKE) install-packages-workspace-cli
 	@$(call create_marker,install-packages-deb,N/A)
 	@echo "✅ DEBパッケージのインストールが完了しました"
 	@echo "📋 インストール完了項目:"
@@ -248,6 +257,28 @@ endif
 	@echo "   - FUSE（AppImage実行用）"
 	@echo "   - Cursor IDE"
 	@echo "   - WezTerm"
+	@echo "   - Google Cloud CLI"
+	@echo "   - Google Workspace CLI (gws)"
+
+# Cursor IDE のインストール
+install-packages-cursor:
+	@echo "💻 Cursor IDE のインストールを開始..."
+	@if ! command -v cursor >/dev/null 2>&1; then \
+		echo "📥 Cursor AppImage をダウンロード中..."; \
+		TEMP_DIR=$$(mktemp -d); \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
+		if wget -q --show-progress "https://downloader.cursor.sh/linux/appImage/x64" -O "$$TEMP_DIR/cursor.appimage"; then \
+			# TODO: 将来的に公式チェックサムが提供されたらここで検証を行う \
+			sudo mv "$$TEMP_DIR/cursor.appimage" /usr/local/bin/cursor || { echo "❌ 配置に失敗しました"; exit 1; }; \
+			sudo chmod +x /usr/local/bin/cursor; \
+			echo "✅ Cursor IDE が /usr/local/bin/cursor にインストールされました"; \
+		else \
+			echo "❌ Cursor のダウンロードに失敗しました"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "✅ Cursor IDE は既にインストールされています"; \
+	fi
 
 # Playwright E2Eテストフレームワークのインストール
 install-packages-playwright:
@@ -512,6 +543,48 @@ system-info:
 	@echo ""; \
 	@echo "🔄 環境変数:"
 	@printenv | sort
+
+# Google Cloud CLI のインストール
+install-packages-gcloud:
+	@echo "☁️  Google Cloud CLI のインストール中..."
+	@if ! command -v gcloud >/dev/null 2>&1; then \
+		echo "📥 Google Cloud GPGキーとリポジトリを追加中..."; \
+		sudo apt-get update -q; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates gnupg curl; \
+		curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg; \
+		echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list; \
+		sudo apt-get update -q && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y google-cloud-cli; \
+	else \
+		echo "✅ Google Cloud CLI は既にインストールされています"; \
+	fi
+	@echo "✅ Google Cloud CLI のインストールが完了しました"
+
+# Google Workspace CLI (gws) のインストール
+install-packages-workspace-cli:
+	@echo "📂 Google Workspace CLI (gws) のインストール中..."
+	@if ! command -v gws >/dev/null 2>&1; then \
+		echo "📥 最新の Google Workspace CLI バイナリを取得中..."; \
+		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//'); \
+		if [ -z "$$LATEST_VERSION" ]; then echo "❌ バージョンの取得に失敗しました"; exit 1; fi; \
+		echo "🔍 最新バージョン: $$LATEST_VERSION"; \
+		TEMP_DIR=$$(mktemp -d); \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
+		ARCH=$$(uname -m); \
+		if [ "$$ARCH" = "x86_64" ]; then ARCH_TRIPLE="x86_64-unknown-linux-gnu"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_TRIPLE="aarch64-unknown-linux-gnu"; else ARCH_TRIPLE="x86_64-unknown-linux-gnu"; fi; \
+		ARCHIVE_NAME="google-workspace-cli-v$${LATEST_VERSION}-$${ARCH_TRIPLE}.tar.gz"; \
+		echo "📥 バイナリとチェックサムをダウンロード中 ($${ARCHIVE_NAME})..."; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME" -o "$$TEMP_DIR/$$ARCHIVE_NAME" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME.sha256" -o "$$TEMP_DIR/$$ARCHIVE_NAME.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
+		echo "$$(cat $$TEMP_DIR/$$ARCHIVE_NAME.sha256)  $$TEMP_DIR/$$ARCHIVE_NAME" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; }; \
+		echo "📦 展開中..."; \
+		tar -xzf "$$TEMP_DIR/$$ARCHIVE_NAME" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
+		if [ ! -f "$$TEMP_DIR/gws" ]; then echo "❌ 展開後のバイナリ (gws) が見つかりません"; exit 1; fi; \
+		sudo mv "$$TEMP_DIR/gws" /usr/local/bin/gws || { echo "❌ 配置に失敗しました"; exit 1; }; \
+		sudo chmod +x /usr/local/bin/gws; \
+	else \
+		echo "✅ Google Workspace CLI (gws) は既にインストールされています"; \
+	fi
+	@echo "✅ Google Workspace CLI (gws) のインストールが完了しました"
 
 # インストール済みパッケージのリスト表示
 list-installed-packages:

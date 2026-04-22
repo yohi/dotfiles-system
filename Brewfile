@@ -45,7 +45,7 @@ brew "fontforge"
 # brew "freeglut" # Linux専用ブロックに移動
 brew "fzf"
 brew "gcc"
-brew "gemini-cli"
+brew "gemini-cli", link: false
 brew "gh"
 brew "ghc"
 brew "git-lfs"
@@ -76,7 +76,7 @@ brew "maven"
 brew "mercurial"
 # brew "mesa" # Linux専用ブロックに移動
 brew "mmctl"
-brew "mypy"
+brew "mypy", link: false
 # MySQL Server (統一バージョン)
 brew "mysql@8.0"
 brew "neovim"
