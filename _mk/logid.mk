@@ -11,8 +11,7 @@ logid-install:
 	@echo "🏗️ Building logiops from source..."
 	@if [ -d "logiops" ]; then \
 		mkdir -p logiops/build; \
-		cd logiops/build && cmake .. && make; \
-		sudo make install; \
+		cd logiops/build && cmake .. && make && sudo make install; \
 	else \
 		echo "❌ Error: logiops directory not found. Please clone it first."; \
 		exit 1; \
@@ -23,9 +22,9 @@ logid-install:
 logid-setup:
 	@echo "⚙️ Setting up logid configuration..."
 	# 設定ファイルのシンボリックリンク作成
-	@sudo ln -sf $(PWD)/logid/logid.cfg /etc/logid.cfg
+	@sudo ln -sf $(REPO_ROOT)/logid/logid.cfg /etc/logid.cfg
 	# サービスファイルの配置
-	@sudo cp $(PWD)/logid/logid.service /etc/systemd/system/logid.service
+	@sudo cp $(REPO_ROOT)/logid/logid.service /etc/systemd/system/logid.service
 	@sudo systemctl daemon-reload
 	@sudo systemctl enable --now logid
 	@echo "✅ logid configuration applied and service started"

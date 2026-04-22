@@ -552,7 +552,7 @@ install-packages-gcloud:
 		echo "📥 Google Cloud GPGキーとリポジトリを追加中..."; \
 		sudo apt-get update -q; \
 		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates gnupg curl; \
-		curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg; \
+		curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg; \
 		echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list; \
 		sudo apt-get update -q && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y google-cloud-cli; \
 	else \
@@ -565,7 +565,8 @@ install-packages-workspace-cli:
 	@echo "📂 Google Workspace CLI のインストール中..."
 	@if ! command -v gw >/dev/null 2>&1; then \
 		echo "📥 最新の Google Workspace CLI バイナリを取得中..."; \
-		LATEST_VERSION=$$(curl -s https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); \
+		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); \
+		if [ -z "$$LATEST_VERSION" ]; then echo "❌ バージョンの取得に失敗しました"; exit 1; fi; \
 		echo "🔍 最新バージョン: $$LATEST_VERSION"; \
 		TEMP_DIR=$$(mktemp -d); \
 		ARCH=$$(uname -m); \
