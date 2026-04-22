@@ -245,9 +245,8 @@ endif
 	# Google Cloud CLI のインストール
 	@$(MAKE) install-packages-gcloud
 
-	# Google Workspace CLI のインストール
+	# Google Workspace CLI (gws) のインストール
 	@$(MAKE) install-packages-workspace-cli
-
 	@$(call create_marker,install-packages-deb,N/A)
 	@echo "✅ DEBパッケージのインストールが完了しました"
 	@echo "📋 インストール完了項目:"
@@ -259,7 +258,7 @@ endif
 	@echo "   - Cursor IDE"
 	@echo "   - WezTerm"
 	@echo "   - Google Cloud CLI"
-	@echo "   - Google Workspace CLI"
+	@echo "   - Google Workspace CLI (gws)"
 
 # Cursor IDE のインストール
 install-packages-cursor:
@@ -267,16 +266,16 @@ install-packages-cursor:
 	@if ! command -v cursor >/dev/null 2>&1; then \
 		echo "📥 Cursor AppImage をダウンロード中..."; \
 		TEMP_DIR=$$(mktemp -d); \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
 		if wget -q --show-progress "https://downloader.cursor.sh/linux/appImage/x64" -O "$$TEMP_DIR/cursor.appimage"; then \
-			sudo mv "$$TEMP_DIR/cursor.appimage" /usr/local/bin/cursor; \
+			# TODO: 将来的に公式チェックサムが提供されたらここで検証を行う \
+			sudo mv "$$TEMP_DIR/cursor.appimage" /usr/local/bin/cursor || { echo "❌ 配置に失敗しました"; exit 1; }; \
 			sudo chmod +x /usr/local/bin/cursor; \
 			echo "✅ Cursor IDE が /usr/local/bin/cursor にインストールされました"; \
 		else \
 			echo "❌ Cursor のダウンロードに失敗しました"; \
-			rm -rf "$$TEMP_DIR"; \
 			exit 1; \
 		fi; \
-		rm -rf "$$TEMP_DIR"; \
 	else \
 		echo "✅ Cursor IDE は既にインストールされています"; \
 	fi
@@ -560,31 +559,32 @@ install-packages-gcloud:
 	fi
 	@echo "✅ Google Cloud CLI のインストールが完了しました"
 
-# Google Workspace CLI (gw) のインストール
+# Google Workspace CLI (gws) のインストール
 install-packages-workspace-cli:
-	@echo "📂 Google Workspace CLI のインストール中..."
-	@if ! command -v gw >/dev/null 2>&1; then \
+	@echo "📂 Google Workspace CLI (gws) のインストール中..."
+	@if ! command -v gws >/dev/null 2>&1; then \
 		echo "📥 最新の Google Workspace CLI バイナリを取得中..."; \
-		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'); \
+		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//'); \
 		if [ -z "$$LATEST_VERSION" ]; then echo "❌ バージョンの取得に失敗しました"; exit 1; fi; \
 		echo "🔍 最新バージョン: $$LATEST_VERSION"; \
 		TEMP_DIR=$$(mktemp -d); \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
 		ARCH=$$(uname -m); \
-		if [ "$$ARCH" = "x86_64" ]; then ARCH_LABEL="amd64"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_LABEL="arm64"; else ARCH_LABEL="amd64"; fi; \
-		echo "📥 バイナリとチェックサムをダウンロード中..."; \
-		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz" -o "$$TEMP_DIR/gw.tar.gz" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
-		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz.sha256" -o "$$TEMP_DIR/gw.tar.gz.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
-		echo "$$(cat $$TEMP_DIR/gw.tar.gz.sha256)  $$TEMP_DIR/gw.tar.gz" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; }; \
+		if [ "$$ARCH" = "x86_64" ]; then ARCH_TRIPLE="x86_64-unknown-linux-gnu"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_TRIPLE="aarch64-unknown-linux-gnu"; else ARCH_TRIPLE="x86_64-unknown-linux-gnu"; fi; \
+		ARCHIVE_NAME="google-workspace-cli-v$${LATEST_VERSION}-$${ARCH_TRIPLE}.tar.gz"; \
+		echo "📥 バイナリとチェックサムをダウンロード中 ($${ARCHIVE_NAME})..."; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME" -o "$$TEMP_DIR/$$ARCHIVE_NAME" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME.sha256" -o "$$TEMP_DIR/$$ARCHIVE_NAME.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
+		echo "$$(cat $$TEMP_DIR/$$ARCHIVE_NAME.sha256)  $$TEMP_DIR/$$ARCHIVE_NAME" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; }; \
 		echo "📦 展開中..."; \
-		tar -xzf "$$TEMP_DIR/gw.tar.gz" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
-		if [ ! -f "$$TEMP_DIR/gw" ]; then echo "❌ 展開後のバイナリが見つかりません"; exit 1; fi; \
-		sudo mv "$$TEMP_DIR/gw" /usr/local/bin/gw || { echo "❌ 配置に失敗しました"; exit 1; }; \
-		sudo chmod +x /usr/local/bin/gw; \
-		rm -rf "$$TEMP_DIR"; \
+		tar -xzf "$$TEMP_DIR/$$ARCHIVE_NAME" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
+		if [ ! -f "$$TEMP_DIR/gws" ]; then echo "❌ 展開後のバイナリ (gws) が見つかりません"; exit 1; fi; \
+		sudo mv "$$TEMP_DIR/gws" /usr/local/bin/gws || { echo "❌ 配置に失敗しました"; exit 1; }; \
+		sudo chmod +x /usr/local/bin/gws; \
 	else \
-		echo "✅ Google Workspace CLI は既にインストールされています"; \
+		echo "✅ Google Workspace CLI (gws) は既にインストールされています"; \
 	fi
-	@echo "✅ Google Workspace CLI のインストールが完了しました"
+	@echo "✅ Google Workspace CLI (gws) のインストールが完了しました"
 
 # インストール済みパッケージのリスト表示
 list-installed-packages:
