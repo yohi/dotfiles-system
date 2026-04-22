@@ -24,11 +24,19 @@ echo "Pre-fetching Arto and nixGL (This may take a moment)..."
 
 # 4. アイコンの動的検索
 echo "Searching for Arto icon..."
-ICON_PATH=$(find ~/.nix-portable/nix/store -maxdepth 3 -name "*arto*" -type d 2>/dev/null | xargs -I{} find {} -name "arto-app-*.png" 2>/dev/null | head -n 1)
+# アイコンファイル（Arto-XXXX.png）を優先的に検索
+ICON_PATH=$(find ~/.nix-portable/nix/store -maxdepth 10 -name "Arto-*.png" 2>/dev/null | grep -v "header" | head -n 1)
+
+if [ -z "$ICON_PATH" ]; then
+    # それでも見つからない場合は以前のロジックでバックアップ検索
+    ICON_PATH=$(find ~/.nix-portable/nix/store -maxdepth 4 -name "*arto*" -type d 2>/dev/null | xargs -I{} find {} -name "*.png" 2>/dev/null | grep -Ei "arto.*icon|arto-app|icon.*arto" | head -n 1)
+fi
 
 if [ -z "$ICON_PATH" ]; then
     echo "Warning: Icon not found. Using default system icon."
     ICON_PATH="system-run"
+else
+    echo "Found icon: $ICON_PATH"
 fi
 
 # 5. .desktop ファイルの生成
@@ -50,6 +58,7 @@ StartupWMClass=arto
 EOF
 
 chmod +x "$DESKTOP_FILE"
+update-desktop-database ~/.local/share/applications 2>/dev/null || true
 
 echo "=== Setup Complete! ==="
 echo "1. Open your Applications menu (Super key)."
