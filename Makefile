@@ -29,6 +29,7 @@ install-system:
 		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
 		echo "   パスワード入力待ちで停止するのを防ぐことができます。"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		exit 1; \
 	fi
 	mkdir -p $(HOME)
 	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile
@@ -42,6 +43,7 @@ setup-system:
 		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
 		echo "   パスワード入力待ちで停止するのを防ぐことができます。"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		exit 1; \
 	fi
 	mkdir -p $(HOME)
 	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile

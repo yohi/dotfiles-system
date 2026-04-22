@@ -21,6 +21,10 @@ logid-install:
 # 設定ファイルの反映とサービスのセットアップ
 logid-setup:
 	@echo "⚙️ Setting up logid configuration..."
+	@if [ ! -x "/usr/local/bin/logid" ]; then \
+		echo "❌ Error: /usr/local/bin/logid not found. Please run 'make logid-install' first."; \
+		exit 1; \
+	fi
 	# 設定ファイルのシンボリックリンク作成
 	@sudo ln -sf $(REPO_ROOT)/logid/logid.cfg /etc/logid.cfg
 	# サービスファイルの配置

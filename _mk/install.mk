@@ -571,9 +571,14 @@ install-packages-workspace-cli:
 		TEMP_DIR=$$(mktemp -d); \
 		ARCH=$$(uname -m); \
 		if [ "$$ARCH" = "x86_64" ]; then ARCH_LABEL="amd64"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_LABEL="arm64"; else ARCH_LABEL="amd64"; fi; \
-		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz" -o "$$TEMP_DIR/gw.tar.gz"; \
-		tar -xzf "$$TEMP_DIR/gw.tar.gz" -C "$$TEMP_DIR" 2>/dev/null || true; \
-		find "$$TEMP_DIR" -type f -name "gw" -exec sudo mv {} /usr/local/bin/gw \;; \
+		echo "📥 バイナリとチェックサムをダウンロード中..."; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz" -o "$$TEMP_DIR/gw.tar.gz" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
+		curl -sL "https://github.com/googleworkspace/cli/releases/download/$$LATEST_VERSION/googleworkspace-cli_linux_$$ARCH_LABEL.tar.gz.sha256" -o "$$TEMP_DIR/gw.tar.gz.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
+		echo "$$(cat $$TEMP_DIR/gw.tar.gz.sha256)  $$TEMP_DIR/gw.tar.gz" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; }; \
+		echo "📦 展開中..."; \
+		tar -xzf "$$TEMP_DIR/gw.tar.gz" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
+		if [ ! -f "$$TEMP_DIR/gw" ]; then echo "❌ 展開後のバイナリが見つかりません"; exit 1; fi; \
+		sudo mv "$$TEMP_DIR/gw" /usr/local/bin/gw || { echo "❌ 配置に失敗しました"; exit 1; }; \
 		sudo chmod +x /usr/local/bin/gw; \
 		rm -rf "$$TEMP_DIR"; \
 	else \
