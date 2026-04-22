@@ -12,6 +12,7 @@ include _mk/install.mk
 include _mk/fonts.mk
 include _mk/clipboard.mk
 include _mk/memory.mk
+include _mk/logid.mk
 
 .PHONY: install setup install-system setup-system init
 
