@@ -29,9 +29,12 @@ logid-setup:
 	@sudo ln -sf $(REPO_ROOT)/logid/logid.cfg /etc/logid.cfg
 	# サービスファイルの配置
 	@sudo cp $(REPO_ROOT)/logid/logid.service /etc/systemd/system/logid.service
+	# udev ルールの配置（マウス接続時の自動再起動用）
+	@sudo cp $(REPO_ROOT)/logid/99-logid-restart.rules /etc/udev/rules.d/99-logid-restart.rules
+	@sudo udevadm control --reload-rules
 	@sudo systemctl daemon-reload
 	@sudo systemctl enable --now logid
-	@echo "✅ logid configuration applied and service started"
+	@echo "✅ logid configuration and udev rules applied"
 
 # サービスの再起動
 logid-restart:
