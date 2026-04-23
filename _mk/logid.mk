@@ -33,7 +33,8 @@ logid-setup:
 	@sudo cp $(REPO_ROOT)/logid/99-logid-restart.rules /etc/udev/rules.d/99-logid-restart.rules
 	@sudo udevadm control --reload-rules
 	@sudo udevadm trigger --action=add --subsystem-match=hidraw
-	@sudo systemctl daemon-reload	@sudo systemctl enable --now logid
+	@sudo systemctl daemon-reload
+	@sudo systemctl enable --now logid
 	@echo "✅ logid configuration and udev rules applied"
 
 # サービスの再起動

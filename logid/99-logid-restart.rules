@@ -1,2 +1,4 @@
+# Logitech devices (USB/Unifying)
 ACTION=="add", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", RUN+="/usr/bin/systemctl restart logid"
+# Logitech MX Ergo S (Bolt/Bluetooth)
 ACTION=="add", SUBSYSTEM=="hidraw", KERNELS=="*046D:B03E*", RUN+="/usr/bin/systemctl restart logid"
