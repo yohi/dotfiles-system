@@ -56,9 +56,16 @@ logid-debug:
 	@sudo systemctl stop logid
 	@sudo logid -v
 
-# ビルド成果物の削除
+# ビルド成果物およびインストール済みの設定ファイルの削除
 logid-clean:
+	@echo "🧹 Cleaning up logid installation..."
+	@sudo systemctl stop logid || true
+	@sudo systemctl disable logid || true
+	@sudo rm -f /etc/logid.cfg /etc/systemd/system/logid.service /etc/udev/rules.d/99-logid-restart.rules
+	@sudo systemctl daemon-reload
+	@sudo udevadm control --reload-rules
 	@if [ -d "logiops/build" ]; then \
 		rm -rf logiops/build; \
 		echo "🧹 Cleaned up logiops build directory"; \
 	fi
+	@echo "✅ Cleanup complete"
