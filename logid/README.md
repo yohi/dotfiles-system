@@ -6,6 +6,7 @@
 
 - **logid.cfg**: ボタン割り当て、感度、ジェスチャー設定などのメイン設定ファイル。
 - **logid.service**: システム起動時に実行するための systemd サービス設定。
+- **99-logid-restart.rules**: マウス接続・復帰時に `logid` を自動再起動するための udev ルール。
 
 ## 対応デバイス
 
@@ -29,14 +30,18 @@
 sudo ln -sf $(pwd)/logid/logid.cfg /etc/logid.cfg
 ```
 
-### 2. サービス設定の反映
-接続トラブル（タイムアウト等）に備え、サービスが停止した際に自動再起動するように設定されています。
+### 2. サービス設定と自動復旧の反映
+接続トラブル（タイムアウト等）やスリープ復帰時の設定外れに備え、以下の設定が含まれています。
+- `Restart=always` (5s間隔): サービス停止時の自動再起動。
+- `udev` ルール: マウス接続（復帰）を検知した際のサービス再起動。
 
 ```bash
-# サービスファイルのコピー
+# サービスファイルと udev ルールの配置
 sudo cp logid/logid.service /etc/systemd/system/logid.service
+sudo cp logid/99-logid-restart.rules /etc/udev/rules.d/99-logid-restart.rules
 
 # 設定の反映
+sudo udevadm control --reload-rules
 sudo systemctl daemon-reload
 sudo systemctl enable --now logid
 ```

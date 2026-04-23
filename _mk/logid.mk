@@ -29,9 +29,12 @@ logid-setup:
 	@sudo ln -sf $(REPO_ROOT)/logid/logid.cfg /etc/logid.cfg
 	# サービスファイルの配置
 	@sudo cp $(REPO_ROOT)/logid/logid.service /etc/systemd/system/logid.service
-	@sudo systemctl daemon-reload
-	@sudo systemctl enable --now logid
-	@echo "✅ logid configuration applied and service started"
+	# udev ルールの配置（マウス接続時の自動再起動用）
+	@sudo cp $(REPO_ROOT)/logid/99-logid-restart.rules /etc/udev/rules.d/99-logid-restart.rules
+	@sudo udevadm control --reload-rules
+	@sudo udevadm trigger --action=add --subsystem-match=hidraw
+	@sudo systemctl daemon-reload	@sudo systemctl enable --now logid
+	@echo "✅ logid configuration and udev rules applied"
 
 # サービスの再起動
 logid-restart:
@@ -53,9 +56,16 @@ logid-debug:
 	@sudo systemctl stop logid
 	@sudo logid -v
 
-# ビルド成果物の削除
+# ビルド成果物およびインストール済みの設定ファイルの削除
 logid-clean:
+	@echo "🧹 Cleaning up logid installation..."
+	@sudo systemctl stop logid || true
+	@sudo systemctl disable logid || true
+	@sudo rm -f /etc/logid.cfg /etc/systemd/system/logid.service /etc/udev/rules.d/99-logid-restart.rules
+	@sudo systemctl daemon-reload
+	@sudo udevadm control --reload-rules
 	@if [ -d "logiops/build" ]; then \
 		rm -rf logiops/build; \
 		echo "🧹 Cleaned up logiops build directory"; \
 	fi
+	@echo "✅ Cleanup complete"
