@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", RUN+="/usr/bin/systemctl restart logid"
