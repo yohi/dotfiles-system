@@ -1,9 +1,14 @@
+# REPO_ROOT の定義（カレントディレクトリ）
+REPO_ROOT := $(CURDIR)
+
 # システム全体のパッケージインストール
 system-install:
 	@echo "📦 システムパッケージの一括インストールを開始..."
 	$(MAKE) install-packages-homebrew
 	$(MAKE) install-packages-apps
 	$(MAKE) install-packages-deb
+	$(MAKE) install-packages-devcontainer-cli
+	$(MAKE) install-packages-uv
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
 # Homebrewのインストール
@@ -15,7 +20,7 @@ install-packages-homebrew:
 	@echo "🍺 Homebrewをインストール中..."
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "📥 Homebrewをダウンロード・インストール..."; \
-		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+		NONINTERACTIVE=1 /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
 		\
 		echo "🔧 Homebrew環境設定を追加中..."; \
 		if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
@@ -451,6 +456,45 @@ install-packages-chrome-beta:
 		echo "✅ Google Chrome Beta は既にインストールされています"; \
 	fi
 	@echo "✅ Google Chrome Beta のインストールが完了しました"
+
+# devcontainer-cli のインストール
+install-packages-devcontainer-cli:
+	@echo "📦 @devcontainers/cli をインストールしています..."
+	@if ! command -v npm >/dev/null 2>&1; then \
+		echo "❌ npm がインストールされていません"; \
+		exit 1; \
+	fi
+	@if command -v devcontainer >/dev/null 2>&1; then \
+		echo "✅ @devcontainers/cli は既にインストールされています"; \
+	else \
+		echo "📥 @devcontainers/cli をグローバルにインストール中..."; \
+		if npm install -g @devcontainers/cli; then \
+			echo "✅ @devcontainers/cli のインストールが完了しました"; \
+		else \
+			echo "❌ @devcontainers/cli のインストールに失敗しました"; \
+			exit 1; \
+		fi; \
+	fi
+
+.PHONY: install-devcontainer-cli
+install-devcontainer-cli: install-packages-devcontainer-cli
+
+# uv のインストール
+install-packages-uv:
+	@echo "📦 uv をインストールしています..."
+	@if command -v uv >/dev/null 2>&1; then \
+		echo "✅ uv は既にインストールされています"; \
+		echo "🔄 uv をアップデート中..."; \
+		uv self update || true; \
+	else \
+		echo "📥 uv を公式スクリプトでインストール中..."; \
+		curl -LsSf https://astral.sh/uv/install.sh | bash; \
+	fi
+	@echo "✅ uv のインストールが完了しました"
+
+.PHONY: install-uv
+install-uv: install-packages-uv
+
 
 # ========================================
 # 後方互換性のためのエイリアス (一部のみここに定義)

@@ -45,7 +45,7 @@ brew "fontforge"
 # brew "freeglut" # Linux専用ブロックに移動
 brew "fzf"
 brew "gcc"
-brew "gemini-cli"
+# brew "gemini-cli"
 brew "gh"
 brew "ghc"
 brew "git-lfs"
@@ -116,9 +116,10 @@ brew "rust"
 brew "srt"
 brew "starship"
 brew "taglib"
+brew "tmux"
 brew "tree"
 brew "tree-sitter"
-brew "uv", link: false
+# brew "uv", link: false
 # brew "vte3" # Linux専用ブロックに移動
 brew "watchman"
 # Package manager for Node.js (nodenv経由のnodeを使用)
@@ -151,7 +152,7 @@ vscode "Google.geminicodeassist"
 vscode "grapecity.gc-excelviewer"
 vscode "hashicorp.terraform"
 vscode "kevinrose.vsc-python-indent"
-vscode "linjun.ftp-support"
+# vscode "linjun.ftp-support"
 vscode "mechatroner.rainbow-csv"
 vscode "mhutchie.git-graph"
 # vscode "ms-azuretools.vscode-containers" # 旧称、ms-vscode-remote.remote-containersに統一
