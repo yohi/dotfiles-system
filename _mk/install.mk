@@ -227,9 +227,7 @@ endif
 	@echo "🔧 FUSE（AppImage実行用）のインストール中..."
 	@$(MAKE) install-packages-fuse
 
-	# Cursor IDE のインストール
-	@echo "💻 Cursor IDE のインストール中..."
-	@$(MAKE) install-packages-cursor
+
 
 	# WezTerm のインストール
 	@echo "🖥️  WezTerm のインストール中..."
