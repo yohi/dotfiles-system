@@ -1,5 +1,6 @@
 # REPO_ROOT の定義（カレントディレクトリ）
 REPO_ROOT := $(CURDIR)
+HOME_DIR ?= $(HOME)
 
 # システム全体のパッケージインストール
 system-install:
@@ -23,26 +24,26 @@ install-packages-homebrew:
 		NONINTERACTIVE=1 /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
 		\
 		echo "🔧 Homebrew環境設定を追加中..."; \
-		if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
 		fi; \
 		\
 		echo "🚀 現在のセッションでHomebrewを有効化..."; \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
 		\
 		echo "📦 Homebrew依存関係の確認・インストール..."; \
 		if command -v apt-get >/dev/null 2>&1; then \
@@ -56,22 +57,22 @@ install-packages-homebrew:
 	else \
 		echo "✅ Homebrewは既にインストールされています。"; \
 		echo "🔧 環境変数を確認中..."; \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" || true; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" || true; \
 		\
 		echo "🔍 Homebrew設定を確認中..."; \
-		if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
@@ -146,8 +147,8 @@ ifndef FORCE
 	fi
 endif
 	@echo "📦 アプリケーションをインストール中..."
-	@if command -v brew >/dev/null 2>&1; then \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
+	@if [ -x /home/linuxbrew/.linuxbrew/bin/brew ] || command -v brew >/dev/null 2>&1; then \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"; \
 		echo "🍺 Brewパッケージをインストール中..."; \
 		brew bundle --file=$(REPO_ROOT)/Brewfile --no-upgrade; \
 	else \
