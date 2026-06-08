@@ -114,16 +114,16 @@ install-packages-fuse:
 	@echo "ℹ️  Ubuntu 25.04対応: 新しいパッケージ名でインストールを試行中..."
 
 	# Ubuntu 25.04以降の新しいパッケージ名でインストール
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2t64  libfuse3-dev fuse3 2>/dev/null || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse libfuse2t64  libfuse3-dev fuse3 2>/dev/null || \
 	echo "⚠️  新しいパッケージ名でのインストールに失敗、従来名を試行中..."
 
 	# 従来のパッケージ名でのフォールバック
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2 libfuse2-dev fuse3 libfuse3-dev 2>/dev/null || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse libfuse2 libfuse2-dev fuse3 libfuse3-dev 2>/dev/null || \
 	echo "⚠️  従来のパッケージ名でもインストールに失敗"
 
 	# 最低限必要なパッケージのみを確実にインストール
 	@echo "🔧 最低限必要なFUSEパッケージをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse fuse3 || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse fuse3 || \
 	echo "⚠️  基本FUSEパッケージのインストールに失敗しました"
 
 	# FUSEユーザー権限の設定
