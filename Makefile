@@ -18,9 +18,9 @@ include _mk/logid.mk
 
 all: install setup ## インストールとセットアップを全て実行します
 clean: ## 一時ファイルやビルド成果物を削除します
-        @$(MAKE) logid-clean
+	@$(MAKE) logid-clean
 test: ## 設定のテストを実行します（現在はプレースホルダー）
-        @echo "Running tests..."
+	@echo "Running tests..."
 
 init: install-system ## 初期セットアップ (install-system のエイリアス)
 
