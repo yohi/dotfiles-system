@@ -18,9 +18,9 @@ include _mk/logid.mk
 
 all: install setup ## インストールとセットアップを全て実行します
 clean: ## 一時ファイルやビルド成果物を削除します
-	@$(MAKE) logid-clean
+        @$(MAKE) logid-clean
 test: ## 設定のテストを実行します（現在はプレースホルダー）
-	@echo "Running tests..."
+        @echo "Running tests..."
 
 init: install-system ## 初期セットアップ (install-system のエイリアス)
 
@@ -29,28 +29,12 @@ setup: setup-system ## System の設定適用
 
 install-system:
 	@echo "==> Installing dotfiles-system"
-	@if ! sudo true 2>/dev/null; then \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "⚠️  注意: これから実行されるコマンドには sudo 権限が必要です。"; \
-		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
-		echo "   パスワード入力待ちで停止するのを防ぐことができます。"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		exit 1; \
-	fi
 	mkdir -p $(HOME)
 	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile
 	$(MAKE) system-install
 
 setup-system:
 	@echo "==> Setting up dotfiles-system"
-	@if ! sudo true 2>/dev/null; then \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "⚠️  注意: これから実行されるコマンドには sudo 権限が必要です。"; \
-		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
-		echo "   パスワード入力待ちで停止するのを防ぐことができます。"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		exit 1; \
-	fi
 	mkdir -p $(HOME)
 	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile
 	$(MAKE) system-setup
