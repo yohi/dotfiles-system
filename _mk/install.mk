@@ -517,11 +517,18 @@ install-packages-uv:
 		echo "✅ uv は既にインストールされています"; \
 		echo "🔄 uv をアップデート中..."; \
 		uv self update || true; \
+	elif command -v brew >/dev/null 2>&1; then \
+		echo "📦 Homebrew で uv をインストール中..."; \
+		brew install uv; \
+	elif command -v pipx >/dev/null 2>&1; then \
+		echo "📦 pipx で uv をインストール中..."; \
+		pipx install uv; \
+	elif command -v python3 >/dev/null 2>&1; then \
+		echo "📦 pip で uv をインストール中..."; \
+		python3 -m pip install --user uv; \
 	else \
-		echo "📥 uv を公式スクリプトでインストール中..."; \
-		curl -fsSL https://astral.sh/uv/install.sh -o uv-install.sh && \
-		/bin/bash uv-install.sh && \
-		rm uv-install.sh || { echo "❌ uv のダウンロードまたは実行に失敗しました"; rm -f uv-install.sh; exit 1; }; \
+		echo "❌ uv をインストールできる手段が見つかりませんでした"; \
+		exit 1; \
 	fi
 	@echo "✅ uv のインストールが完了しました"
 
