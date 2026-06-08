@@ -118,7 +118,7 @@ brew "starship"
 brew "taglib"
 brew "tmux"
 brew "tree"
-brew "tree-sitter"
+# brew "tree-sitter"
 # brew "uv", link: false
 # brew "vte3" # Linux専用ブロックに移動
 brew "watchman"

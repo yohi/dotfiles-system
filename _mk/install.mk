@@ -21,29 +21,31 @@ install-packages-homebrew:
 	@echo "🍺 Homebrewをインストール中..."
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "📥 Homebrewをダウンロード・インストール..."; \
-		NONINTERACTIVE=1 /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+		curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o brew-install.sh && \
+		NONINTERACTIVE=1 /bin/bash brew-install.sh && \
+		rm brew-install.sh || { echo "❌ Homebrewのダウンロードまたは実行に失敗しました"; rm -f brew-install.sh; exit 1; }; \
 		\
 		echo "🔧 Homebrew環境設定を追加中..."; \
-		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
 		fi; \
 		\
 		echo "🚀 現在のセッションでHomebrewを有効化..."; \
-		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"; \
 		\
 		echo "📦 Homebrew依存関係の確認・インストール..."; \
 		if command -v apt-get >/dev/null 2>&1; then \
@@ -57,22 +59,22 @@ install-packages-homebrew:
 	else \
 		echo "✅ Homebrewは既にインストールされています。"; \
 		echo "🔧 環境変数を確認中..."; \
-		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" || true; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)" || true; \
 		\
 		echo "🔍 Homebrew設定を確認中..."; \
-		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
@@ -250,7 +252,6 @@ endif
 	@echo "   - Google Chrome Beta"
 	@echo "   - Chromium"
 	@echo "   - FUSE（AppImage実行用）"
-	@echo "   - Cursor IDE"
 	@echo "   - WezTerm"
 
 # Playwright E2Eテストフレームワークのインストール
@@ -475,7 +476,7 @@ install-packages-devcontainer-cli:
 		fi; \
 	fi
 
-.PHONY: install-devcontainer-cli
+.PHONY: install-devcontainer-cli install-packages-devcontainer-cli
 install-devcontainer-cli: install-packages-devcontainer-cli
 
 # uv のインストール
@@ -487,11 +488,13 @@ install-packages-uv:
 		uv self update || true; \
 	else \
 		echo "📥 uv を公式スクリプトでインストール中..."; \
-		curl -LsSf https://astral.sh/uv/install.sh | bash; \
+		curl -fsSL https://astral.sh/uv/install.sh -o uv-install.sh && \
+		/bin/bash uv-install.sh && \
+		rm uv-install.sh || { echo "❌ uv のダウンロードまたは実行に失敗しました"; rm -f uv-install.sh; exit 1; }; \
 	fi
 	@echo "✅ uv のインストールが完了しました"
 
-.PHONY: install-uv
+.PHONY: install-uv install-packages-uv
 install-uv: install-packages-uv
 
 
