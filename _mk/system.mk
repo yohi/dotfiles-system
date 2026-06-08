@@ -1,7 +1,7 @@
 # システムレベルの基本設定
 system-setup:
 ifndef FORCE
-	@result="$(call check_marker,setup-system)"; if [ -n "$$result" ] && $$result; then \
+	@if $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 		exit 0; \
 	fi
