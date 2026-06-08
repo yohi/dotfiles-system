@@ -200,13 +200,6 @@ check_editors() {
     else
         record_result "WARN" "VS Codeがインストールされていません"
     fi
-    
-    # Cursor
-    if command -v cursor &> /dev/null || [[ -f "/opt/cursor/cursor" ]]; then
-        record_result "PASS" "Cursorがインストールされています"
-    else
-        record_result "WARN" "Cursorがインストールされていません"
-    fi
 }
 
 # シェル環境の確認

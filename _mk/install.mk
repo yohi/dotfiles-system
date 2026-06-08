@@ -1,9 +1,15 @@
+# REPO_ROOT の定義（カレントディレクトリ）
+REPO_ROOT := $(CURDIR)
+HOME_DIR ?= $(HOME)
+
 # システム全体のパッケージインストール
 system-install:
 	@echo "📦 システムパッケージの一括インストールを開始..."
 	$(MAKE) install-packages-homebrew
 	$(MAKE) install-packages-apps
 	$(MAKE) install-packages-deb
+	$(MAKE) install-packages-devcontainer-cli
+	$(MAKE) install-packages-uv
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
 # Homebrewのインストール
@@ -15,29 +21,31 @@ install-packages-homebrew:
 	@echo "🍺 Homebrewをインストール中..."
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "📥 Homebrewをダウンロード・インストール..."; \
-		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+		curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o brew-install.sh && \
+		NONINTERACTIVE=1 /bin/bash brew-install.sh && \
+		rm brew-install.sh || { echo "❌ Homebrewのダウンロードまたは実行に失敗しました"; rm -f brew-install.sh; exit 1; }; \
 		\
 		echo "🔧 Homebrew環境設定を追加中..."; \
-		if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
 		fi; \
 		\
 		echo "🚀 現在のセッションでHomebrewを有効化..."; \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"; \
 		\
 		echo "📦 Homebrew依存関係の確認・インストール..."; \
 		if command -v apt-get >/dev/null 2>&1; then \
@@ -51,22 +59,22 @@ install-packages-homebrew:
 	else \
 		echo "✅ Homebrewは既にインストールされています。"; \
 		echo "🔧 環境変数を確認中..."; \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" || true; \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)" || true; \
 		\
 		echo "🔍 Homebrew設定を確認中..."; \
-		if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
+		if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.bashrc 2>/dev/null; then \
 			echo "📝 .bashrcにHomebrew設定を追加中..."; \
 			echo '' >> $(HOME_DIR)/.bashrc; \
-			echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
+			echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.bashrc; \
 		else \
 			echo "✅ .bashrcには既にHomebrew設定が存在します"; \
 		fi; \
 		\
 		if [ -f "$(HOME_DIR)/.zshrc" ] || command -v zsh >/dev/null 2>&1; then \
-			if ! grep -q 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
+			if ! grep -q 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' $(HOME_DIR)/.zshrc 2>/dev/null; then \
 				echo "📝 .zshrcにHomebrew設定を追加中..."; \
 				echo '' >> $(HOME_DIR)/.zshrc 2>/dev/null || touch $(HOME_DIR)/.zshrc; \
-				echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
+				echo 'eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"' >> $(HOME_DIR)/.zshrc; \
 			else \
 				echo "✅ .zshrcには既にHomebrew設定が存在します"; \
 			fi; \
@@ -145,8 +153,8 @@ ifndef FORCE
 	fi
 endif
 	@echo "📦 アプリケーションをインストール中..."
-	@if command -v brew >/dev/null 2>&1; then \
-		eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; \
+	@if [ -x /home/linuxbrew/.linuxbrew/bin/brew ] || command -v brew >/dev/null 2>&1; then \
+		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"; \
 		echo "🍺 Brewパッケージをインストール中..."; \
 		brew bundle --file=$(REPO_ROOT)/Brewfile --no-upgrade; \
 	else \
@@ -226,9 +234,7 @@ endif
 	@echo "🔧 FUSE（AppImage実行用）のインストール中..."
 	@$(MAKE) install-packages-fuse
 
-	# Cursor IDE のインストール
-	@echo "💻 Cursor IDE のインストール中..."
-	@$(MAKE) install-packages-cursor
+
 
 	# WezTerm のインストール
 	@echo "🖥️  WezTerm のインストール中..."
@@ -255,7 +261,6 @@ endif
 	@echo "   - Google Chrome Beta"
 	@echo "   - Chromium"
 	@echo "   - FUSE（AppImage実行用）"
-	@echo "   - Cursor IDE"
 	@echo "   - WezTerm"
 	@echo "   - Google Cloud CLI"
 	@echo "   - Google Workspace CLI (gws)"
@@ -482,6 +487,54 @@ install-packages-chrome-beta:
 		echo "✅ Google Chrome Beta は既にインストールされています"; \
 	fi
 	@echo "✅ Google Chrome Beta のインストールが完了しました"
+
+# devcontainer-cli のインストール
+install-packages-devcontainer-cli:
+	@echo "📦 @devcontainers/cli をインストールしています..."
+	@if ! command -v npm >/dev/null 2>&1; then \
+		echo "❌ npm がインストールされていません"; \
+		exit 1; \
+	fi
+	@if command -v devcontainer >/dev/null 2>&1; then \
+		echo "✅ @devcontainers/cli は既にインストールされています"; \
+	else \
+		echo "📥 @devcontainers/cli をグローバルにインストール中..."; \
+		if npm install -g @devcontainers/cli; then \
+			echo "✅ @devcontainers/cli のインストールが完了しました"; \
+		else \
+			echo "❌ @devcontainers/cli のインストールに失敗しました"; \
+			exit 1; \
+		fi; \
+	fi
+
+.PHONY: install-devcontainer-cli install-packages-devcontainer-cli
+install-devcontainer-cli: install-packages-devcontainer-cli
+
+# uv のインストール
+install-packages-uv:
+	@echo "📦 uv をインストールしています..."
+	@if command -v uv >/dev/null 2>&1; then \
+		echo "✅ uv は既にインストールされています"; \
+		echo "🔄 uv をアップデート中..."; \
+		uv self update || true; \
+	elif command -v brew >/dev/null 2>&1; then \
+		echo "📦 Homebrew で uv をインストール中..."; \
+		brew install uv; \
+	elif command -v pipx >/dev/null 2>&1; then \
+		echo "📦 pipx で uv をインストール中..."; \
+		pipx install uv; \
+	elif command -v python3 >/dev/null 2>&1; then \
+		echo "📦 pip で uv をインストール中..."; \
+		python3 -m pip install --user uv; \
+	else \
+		echo "❌ uv をインストールできる手段が見つかりませんでした"; \
+		exit 1; \
+	fi
+	@echo "✅ uv のインストールが完了しました"
+
+.PHONY: install-uv install-packages-uv
+install-uv: install-packages-uv
+
 
 # ========================================
 # 後方互換性のためのエイリアス (一部のみここに定義)
