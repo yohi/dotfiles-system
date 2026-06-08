@@ -1,6 +1,17 @@
 include _mk/core.mk
 include _mk/help.mk
 
+
+# GUI環境の自動検出 (非GUI環境ではGUIアプリをスキップ)
+ifndef SKIP_GUI
+    ifeq ($(shell uname -s),Linux)
+        IS_GRAPHICAL := $(shell systemctl get-default 2>/dev/null | grep -q graphical && echo 1 || echo 0)
+        ifneq ($(IS_GRAPHICAL),1)
+            export SKIP_GUI := 1
+        endif
+    endif
+endif
+
 # Global variables
 HOME_DIR := $(HOME)
 REPO_ROOT := $(CURDIR)

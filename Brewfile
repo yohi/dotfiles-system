@@ -127,7 +127,9 @@ brew "yarn"
 brew "yq"
 brew "zsh"
 brew "zsh-autosuggestions"
-vscode "4ops.terraform"
+
+if ENV["SKIP_GUI"] != "1"
+	vscode "4ops.terraform"
 vscode "asciidoctor.asciidoctor-vscode"
 vscode "atlassian.atlascode"
 vscode "batisteo.vscode-django"
@@ -185,6 +187,8 @@ vscode "streetsidesoftware.code-spell-checker"
 vscode "vscode-icons-team.vscode-icons"
 vscode "yzhang.markdown-all-in-one"
 vscode "zhuangtongfa.material-theme"
+end
+
 
 # フォント (macOS のみ)
 if OS.mac?
@@ -194,7 +198,7 @@ if OS.mac?
 end
 
 # Linux専用パッケージ
-if OS.linux?
+if OS.linux? && ENV["SKIP_GUI"] != "1"
   tap "linuxbrew/xorg"
   brew "at-spi2-core"
   brew "freeglut"
