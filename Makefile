@@ -29,7 +29,7 @@ setup: setup-system ## System の設定適用
 
 install-system:
 	@echo "==> Installing dotfiles-system"
-	@if ! sudo -n true 2>/dev/null; then \
+	@if ! sudo true 2>/dev/null; then \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		echo "⚠️  注意: これから実行されるコマンドには sudo 権限が必要です。"; \
 		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
@@ -43,7 +43,7 @@ install-system:
 
 setup-system:
 	@echo "==> Setting up dotfiles-system"
-	@if ! sudo -n true 2>/dev/null; then \
+	@if ! sudo true 2>/dev/null; then \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		echo "⚠️  注意: これから実行されるコマンドには sudo 権限が必要です。"; \
 		echo "💡 事前に別のターミナル、またはこの画面で 'sudo -v' を実行しておくと"; \
