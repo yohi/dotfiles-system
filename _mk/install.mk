@@ -640,7 +640,8 @@ install-packages-workspace-cli:
 		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//'); \
 		if [ -z "$$LATEST_VERSION" ]; then \
 			# 0.22.5: PR作成時点での最新安定版。互換性検証済み。 \
-			LATEST_VERSION="0.22.5"; \
+			# TODO: 定期的に最新安定版を確認し、この値を更新してください。 \
+			LATEST_VERSION="0.22.5"; # verified 2026-06-09 \
 		fi; \
 		echo "🔍 使用バージョン: $$LATEST_VERSION"; \
 		TEMP_DIR=$$(mktemp -d); \
