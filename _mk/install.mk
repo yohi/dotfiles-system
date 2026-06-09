@@ -114,16 +114,16 @@ install-packages-fuse:
 	@echo "ℹ️  Ubuntu 25.04対応: 新しいパッケージ名でインストールを試行中..."
 
 	# Ubuntu 25.04以降の新しいパッケージ名でインストール
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2t64  libfuse3-dev fuse3 2>/dev/null || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse libfuse2t64 libfuse3-dev fuse3 2>/dev/null || \
 	echo "⚠️  新しいパッケージ名でのインストールに失敗、従来名を試行中..."
 
 	# 従来のパッケージ名でのフォールバック
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse libfuse2 libfuse2-dev fuse3 libfuse3-dev 2>/dev/null || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse libfuse2 libfuse2-dev fuse3 libfuse3-dev 2>/dev/null || \
 	echo "⚠️  従来のパッケージ名でもインストールに失敗"
 
 	# 最低限必要なパッケージのみを確実にインストール
 	@echo "🔧 最低限必要なFUSEパッケージをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt install -y fuse fuse3 || \
+	@sudo DEBIAN_FRONTEND=noninteractive apt install -y dconf-cli fuse fuse3 || \
 	echo "⚠️  基本FUSEパッケージのインストールに失敗しました"
 
 	# FUSEユーザー権限の設定
@@ -181,53 +181,69 @@ endif
 
 	# Visual Studio Code のインストール
 	@echo "📝 Visual Studio Code のインストール中..."
-	@if ! command -v code >/dev/null 2>&1; then \
-		echo "📥 Microsoft GPGキーを追加中..."; \
-		wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg; \
-		sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/; \
-		sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'; \
-		sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y code; \
-		rm -f packages.microsoft.gpg; \
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		if ! command -v code >/dev/null 2>&1; then \
+			echo "📥 Microsoft GPGキーを追加中..."; \
+			wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg; \
+			sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/; \
+			sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'; \
+			sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y code; \
+			rm -f packages.microsoft.gpg; \
+		else \
+			echo "✅ Visual Studio Code は既にインストールされています"; \
+		fi; \
 	else \
-		echo "✅ Visual Studio Code は既にインストールされています"; \
+		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
 
 	# Google Chrome Stable のインストール
 	@echo "🌐 Google Chrome Stable のインストール中..."
-	@if ! command -v google-chrome-stable >/dev/null 2>&1; then \
-		echo "📥 Google GPGキーをダウンロード・設定中..."; \
-		sudo mkdir -p /usr/share/keyrings; \
-		curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg; \
-		echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list; \
-		sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y google-chrome-stable; \
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		if ! command -v google-chrome-stable >/dev/null 2>&1; then \
+			echo "📥 Google GPGキーをダウンロード・設定中..."; \
+			sudo mkdir -p /usr/share/keyrings; \
+			curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg; \
+			echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list; \
+			sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y google-chrome-stable; \
+		else \
+			echo "✅ Google Chrome Stable は既にインストールされています"; \
+		fi; \
 	else \
-		echo "✅ Google Chrome Stable は既にインストールされています"; \
+		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
 
 	# Google Chrome Beta のインストール
 	@echo "🌐 Google Chrome Beta のインストール中..."
-	@if ! command -v google-chrome-beta >/dev/null 2>&1; then \
-		echo "📥 Google Chrome リポジトリの確認中..."; \
-		if ! grep -q "chrome/deb" /etc/apt/sources.list.d/google-chrome.list 2>/dev/null; then \
-			echo "📥 Google GPGキーをダウンロード・設定中..."; \
-			sudo mkdir -p /usr/share/keyrings; \
-			curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg; \
-			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'; \
-			sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		if ! command -v google-chrome-beta >/dev/null 2>&1; then \
+			echo "📥 Google Chrome リポジトリの確認中..."; \
+			if ! grep -q "chrome/deb" /etc/apt/sources.list.d/google-chrome.list 2>/dev/null; then \
+				echo "📥 Google GPGキーをダウンロード・設定中..."; \
+				sudo mkdir -p /usr/share/keyrings; \
+				curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg; \
+				sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'; \
+				sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
+			fi; \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y google-chrome-beta; \
+		else \
+			echo "✅ Google Chrome Beta は既にインストールされています"; \
 		fi; \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y google-chrome-beta; \
 	else \
-		echo "✅ Google Chrome Beta は既にインストールされています"; \
+		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
 
 	# Chromium のインストール
 	@echo "🌐 Chromium のインストール中..."
-	@if ! command -v chromium-browser >/dev/null 2>&1; then \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y chromium-browser; \
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		if ! command -v chromium-browser >/dev/null 2>&1; then \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y chromium-browser; \
+		else \
+			echo "✅ Chromium は既にインストールされています"; \
+		fi; \
 	else \
-		echo "✅ Chromium は既にインストールされています"; \
+		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
 
 	# FUSE（AppImage実行用）のインストール
@@ -238,14 +254,18 @@ endif
 
 	# WezTerm のインストール
 	@echo "🖥️  WezTerm のインストール中..."
-	@if ! command -v wezterm >/dev/null 2>&1; then \
-		echo "📦 WezTerm GPGキーを追加中..."; \
-		curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg; \
-		echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list; \
-		sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y wezterm; \
+	@if [ "$$SKIP_GUI" != "1" ]; then \
+		if ! command -v wezterm >/dev/null 2>&1; then \
+			echo "📦 WezTerm GPGキーを追加中..."; \
+			curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg; \
+			echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list; \
+			sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
+			sudo DEBIAN_FRONTEND=noninteractive apt install -y wezterm; \
+		else \
+			echo "✅ WezTerm は既にインストールされています"; \
+		fi; \
 	else \
-		echo "✅ WezTerm は既にインストールされています"; \
+		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
 
 	# Google Cloud CLI のインストール
@@ -617,9 +637,13 @@ install-packages-workspace-cli:
 	@echo "📂 Google Workspace CLI (gws) のインストール中..."
 	@if ! command -v gws >/dev/null 2>&1; then \
 		echo "📥 最新の Google Workspace CLI バイナリを取得中..."; \
-		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//'); \
-		if [ -z "$$LATEST_VERSION" ]; then echo "❌ バージョンの取得に失敗しました"; exit 1; fi; \
-		echo "🔍 最新バージョン: $$LATEST_VERSION"; \
+		LATEST_VERSION=$$(curl -fsSL https://api.github.com/repos/googleworkspace/cli/releases/latest 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//'); \
+		if [ -z "$$LATEST_VERSION" ]; then \
+			# 0.22.5: PR作成時点での最新安定版。互換性検証済み。 \
+			# TODO: 定期的に最新安定版を確認し、この値を更新してください。 \
+			LATEST_VERSION="0.22.5"; # verified 2026-06-09 \
+		fi; \
+		echo "🔍 使用バージョン: $$LATEST_VERSION"; \
 		TEMP_DIR=$$(mktemp -d); \
 		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
 		ARCH=$$(uname -m); \
@@ -628,7 +652,7 @@ install-packages-workspace-cli:
 		echo "📥 バイナリとチェックサムをダウンロード中 ($${ARCHIVE_NAME})..."; \
 		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME" -o "$$TEMP_DIR/$$ARCHIVE_NAME" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
 		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME.sha256" -o "$$TEMP_DIR/$$ARCHIVE_NAME.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
-		echo "$$(cat $$TEMP_DIR/$$ARCHIVE_NAME.sha256)  $$TEMP_DIR/$$ARCHIVE_NAME" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; }; \
+		echo "$$(cat $$TEMP_DIR/$$ARCHIVE_NAME.sha256 | awk '{print $$1}')  $$TEMP_DIR/$$ARCHIVE_NAME" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; } ; \
 		echo "📦 展開中..."; \
 		tar -xzf "$$TEMP_DIR/$$ARCHIVE_NAME" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
 		if [ ! -f "$$TEMP_DIR/gws" ]; then echo "❌ 展開後のバイナリ (gws) が見つかりません"; exit 1; fi; \
