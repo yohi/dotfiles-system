@@ -1,11 +1,12 @@
 # システムレベルの基本設定
 system-setup:
-ifndef FORCE
-	@if $(call check_marker,setup-system,N/A) 2>/dev/null; then \
+	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
-		exit 0; \
+	else \
+		$(MAKE) .system-setup-impl; \
 	fi
-endif
+
+.system-setup-impl:
 	@echo "🔧 システムレベルの基本設定を開始..."
 
 	# tzdataの入力を省略するための設定
@@ -95,7 +96,7 @@ endif
 	else \
 		echo "⚠️  xdg-user-dirs-update が見つからないため、ディレクトリ名の変更をスキップします"; \
 	fi
-	
+
 	# Ubuntu Japanese
 	@echo "🇯🇵 Ubuntu Japanese環境を設定中..."
 	@for key_url in \

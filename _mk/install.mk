@@ -14,10 +14,13 @@ system-install:
 
 # Homebrewのインストール
 install-packages-homebrew:
-	@if $(call check_command,brew); then \
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-homebrew,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-homebrew)"; \
-		exit 0; \
+	else \
+		$(MAKE) .install-packages-homebrew-impl; \
 	fi
+
+.install-packages-homebrew-impl:
 	@echo "🍺 Homebrewをインストール中..."
 	@if ! command -v brew >/dev/null 2>&1; then \
 		echo "📥 Homebrewをダウンロード・インストール..."; \
@@ -80,11 +83,12 @@ install-packages-homebrew:
 			fi; \
 		fi; \
 	fi
-
 	@echo "📋 Homebrewの状態確認:"
 	@echo "   バージョン: $$(brew --version | head -1 2>/dev/null || echo '取得できませんでした')"
 	@echo "   インストール先: $$(brew --prefix 2>/dev/null || echo '取得できませんでした')"
 	@echo "✅ Homebrewのインストールが完了しました。"
+	@$(call create_marker,install-packages-homebrew,N/A)
+
 
 # AppImage実行用のFUSEパッケージをインストール
 install-packages-fuse:
@@ -146,15 +150,22 @@ install-packages-fuse:
 
 # Brewfileを使用してアプリケーションをインストール
 install-packages-apps:
-ifndef FORCE
-	@if $(call check_marker,install-packages-apps,N/A) 2>/dev/null; then \
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-apps,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-apps)"; \
-		exit 0; \
+	else \
+		$(MAKE) .install-packages-apps-impl; \
 	fi
-endif
+
+.install-packages-apps-impl:
 	@echo "📦 アプリケーションをインストール中..."
 	@if [ -x /home/linuxbrew/.linuxbrew/bin/brew ] || command -v brew >/dev/null 2>&1; then \
 		eval "$$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || brew shellenv)"; \
+		echo "🔑 外部リポジトリ(Tap)を信頼設定中..."; \
+		taps=$$(grep -E '^\s*tap\s+["'\'']' $(REPO_ROOT)/Brewfile | sed -E 's/^\s*tap\s+["'\'']([^"'\'']+)["'\'']/\1/'); \
+		for tap in $$taps; do \
+			echo "   Trusting tap: $$tap"; \
+			brew trust "$$tap" 2>/dev/null || true; \
+		done; \
 		echo "🍺 Brewパッケージをインストール中..."; \
 		brew bundle --file=$(REPO_ROOT)/Brewfile --no-upgrade; \
 	else \
@@ -164,22 +175,20 @@ endif
 	@$(call create_marker,install-packages-apps,N/A)
 	@echo "✅ アプリケーションのインストールが完了しました。"
 
+
 # DEBパッケージをインストール（IDE・ブラウザ含む）
 install-packages-deb:
-ifndef FORCE
-	@if $(call check_marker,install-packages-deb,N/A) 2>/dev/null; then \
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-deb,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-deb)"; \
-		exit 0; \
+	else \
+		$(MAKE) .install-packages-deb-impl; \
 	fi
-endif
+
+.install-packages-deb-impl:
 	@echo "📦 DEBパッケージをインストール中..."
 	@echo "ℹ️  IDE・ブラウザ・開発ツールをインストールします"
-
-	# パッケージリストを更新
 	@echo "🔄 パッケージリストを更新中..."
 	@sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"
-
-	# Visual Studio Code のインストール
 	@echo "📝 Visual Studio Code のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v code >/dev/null 2>&1; then \
@@ -196,8 +205,6 @@ endif
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
-
-	# Google Chrome Stable のインストール
 	@echo "🌐 Google Chrome Stable のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v google-chrome-stable >/dev/null 2>&1; then \
@@ -213,8 +220,6 @@ endif
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
-
-	# Google Chrome Beta のインストール
 	@echo "🌐 Google Chrome Beta のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v google-chrome-beta >/dev/null 2>&1; then \
@@ -233,8 +238,6 @@ endif
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
-
-	# Chromium のインストール
 	@echo "🌐 Chromium のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v chromium-browser >/dev/null 2>&1; then \
@@ -245,14 +248,8 @@ endif
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
-
-	# FUSE（AppImage実行用）のインストール
 	@echo "🔧 FUSE（AppImage実行用）のインストール中..."
 	@$(MAKE) install-packages-fuse
-
-
-
-	# WezTerm のインストール
 	@echo "🖥️  WezTerm のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v wezterm >/dev/null 2>&1; then \
@@ -267,11 +264,7 @@ endif
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
-
-	# Google Cloud CLI のインストール
 	@$(MAKE) install-packages-gcloud
-
-	# Google Workspace CLI (gws) のインストール
 	@$(MAKE) install-packages-workspace-cli
 	@$(call create_marker,install-packages-deb,N/A)
 	@echo "✅ DEBパッケージのインストールが完了しました"
@@ -285,13 +278,14 @@ endif
 	@echo "   - Google Cloud CLI"
 	@echo "   - Google Workspace CLI (gws)"
 
+
 # Cursor IDE のインストール
 install-packages-cursor:
 	@echo "💻 Cursor IDE のインストールを開始..."
 	@if ! command -v cursor >/dev/null 2>&1; then \
 		echo "📥 Cursor AppImage をダウンロード中..."; \
 		TEMP_DIR=$$(mktemp -d); \
-		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT; \
 		if wget -q --show-progress "https://downloader.cursor.sh/linux/appImage/x64" -O "$$TEMP_DIR/cursor.appimage"; then \
 			# TODO: 将来的に公式チェックサムが提供されたらここで検証を行う \
 			sudo mv "$$TEMP_DIR/cursor.appimage" /usr/local/bin/cursor || { echo "❌ 配置に失敗しました"; exit 1; }; \
@@ -645,13 +639,13 @@ install-packages-workspace-cli:
 		fi; \
 		echo "🔍 使用バージョン: $$LATEST_VERSION"; \
 		TEMP_DIR=$$(mktemp -d); \
-		trap 'rm -rf "$$TEMP_DIR"' EXIT ERR; \
+		trap 'rm -rf "$$TEMP_DIR"' EXIT; \
 		ARCH=$$(uname -m); \
 		if [ "$$ARCH" = "x86_64" ]; then ARCH_TRIPLE="x86_64-unknown-linux-gnu"; elif [ "$$ARCH" = "aarch64" ]; then ARCH_TRIPLE="aarch64-unknown-linux-gnu"; else ARCH_TRIPLE="x86_64-unknown-linux-gnu"; fi; \
-		ARCHIVE_NAME="google-workspace-cli-v$${LATEST_VERSION}-$${ARCH_TRIPLE}.tar.gz"; \
+		ARCHIVE_NAME="google-workspace-cli-$${ARCH_TRIPLE}.tar.gz"; \
 		echo "📥 バイナリとチェックサムをダウンロード中 ($${ARCHIVE_NAME})..."; \
-		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME" -o "$$TEMP_DIR/$$ARCHIVE_NAME" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
-		curl -sL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME.sha256" -o "$$TEMP_DIR/$$ARCHIVE_NAME.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
+		curl -fsSL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME" -o "$$TEMP_DIR/$$ARCHIVE_NAME" || { echo "❌ ダウンロードに失敗しました"; exit 1; }; \
+		curl -fsSL "https://github.com/googleworkspace/cli/releases/download/v$$LATEST_VERSION/$$ARCHIVE_NAME.sha256" -o "$$TEMP_DIR/$$ARCHIVE_NAME.sha256" || { echo "❌ チェックサムの取得に失敗しました"; exit 1; }; \
 		echo "$$(cat $$TEMP_DIR/$$ARCHIVE_NAME.sha256 | awk '{print $$1}')  $$TEMP_DIR/$$ARCHIVE_NAME" | sha256sum -c --status || { echo "❌ 整合性検証に失敗しました"; exit 1; } ; \
 		echo "📦 展開中..."; \
 		tar -xzf "$$TEMP_DIR/$$ARCHIVE_NAME" -C "$$TEMP_DIR" || { echo "❌ 展開に失敗しました"; exit 1; }; \
