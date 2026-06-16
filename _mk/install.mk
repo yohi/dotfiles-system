@@ -223,7 +223,7 @@ install-packages-deb:
 	@echo "🌐 Google Chrome Beta のインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v google-chrome-beta >/dev/null 2>&1; then \
-			echo "📥 Google Chrome リポジトリ의 확인中..."; \
+			echo "📥 Google Chrome リポジトリの確認中..."; \
 			if ! grep -q "chrome/deb" /etc/apt/sources.list.d/google-chrome.list 2>/dev/null; then \
 				echo "📥 Google GPGキーをダウンロード・設定中..."; \
 				sudo mkdir -p /usr/share/keyrings; \

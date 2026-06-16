@@ -47,7 +47,7 @@ system-setup:
 
 	# 基本開発ツール
 	@echo "🔧 基本開発ツールをインストール中..."
-	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに 失敗しましたが、処理を続行します"
+	@sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential curl file wget software-properties-common unzip zsh  || echo "⚠️  一部の基本開発ツールのインストールに失敗しましたが、処理を続行します"
 
 	# 日本語フォントのインストール
 	@echo "🔤 日本語フォントをインストール中..."
@@ -77,14 +77,14 @@ system-setup:
 		systemctl --user enable ibus-daemon || true; \
 		systemctl --user start ibus-daemon || true; \
 	else \
-		echo "⏭️  systemctl --user が利用できないため、IBusサービスの有効化をスキ ップします。"; \
+		echo "⏭️  systemctl --user が利用できないため、IBusサービスの有効化をスキップします。"; \
 	fi
 
 	# フォント環境のセットアップ
 	@if [ "$$SKIP_FONTS" != "1" ]; then \
-		$(MAKE) fonts-setup || echo "⚠️  fonts-setup の実行中にエラーが発生しまし たが、処理を続行します"; \
+		$(MAKE) fonts-setup || echo "⚠️  fonts-setup の実行中にエラーが発生しましたが、処理を続行します"; \
 	else \
-		echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします 。"; \
+		echo "⏭️  SKIP_FONTS=1 が設定されているため、フォント設定をスキップします。"; \
 	fi
 
 	# ユーザーディレクトリ管理パッケージをインストール
@@ -94,7 +94,7 @@ system-setup:
 	@if command -v xdg-user-dirs-update >/dev/null 2>&1; then \
 		LANG=C xdg-user-dirs-update --force; \
 	else \
-		echo "⚠️  xdg-user-dirs-update が見つからないため、ディレクトリ名の変更を スキップします"; \
+		echo "⚠️  xdg-user-dirs-update が見つからないため、ディレクトリ名の変更をスキップします"; \
 	fi
 
 	# Ubuntu Japanese
@@ -123,7 +123,7 @@ system-setup:
 			echo "⏭️ SKIP_GUI=1 のため ubuntu-defaults-ja をスキップ"; \
 		fi; \
 	else \
-		echo "⚠️  Ubuntu Japanese のリポジトリリスト ($$REL_CODE.list) が見つかり ません。スキップします。"; \
+		echo "⚠️  Ubuntu Japanese のリポジトリリスト ($$REL_CODE.list) が見つかりません。スキップします。"; \
 	fi
 
 	# キーボード設定
@@ -141,7 +141,7 @@ system-setup:
 		sudo localectl set-keymap us || true; \
 		sudo localectl set-x11-keymap us || true; \
 	else \
-		echo "⏭️  localectl または systemd が利用できないため、システムキーマップ の設定をスキップします。"; \
+		echo "⏭️  localectl または systemd が利用できないため、システムキーマップの設定をスキップします。"; \
 	fi
 		# GNOME環境の場合、入力ソースは既にmozc設定で行われているためスキップ
 	@echo "✅ GNOME入力ソースはmozc設定で設定されています"
@@ -154,7 +154,7 @@ system-setup:
 	# 基本パッケージ
 	@echo "📦 基本パッケージをインストール中..."
 	@if [ "$$SKIP_GUI" != "1" ]; then \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処 理を続行します"; \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y flatpak gdebi chrome-gnome-shell xclip xsel || echo "⚠️  一部の基本パッケージのインストールに失敗しましたが、処理を続行します"; \
 	else \
 		echo "⏭️ SKIP_GUI=1 のため基本GUIパッケージをスキップ"; \
 	fi
@@ -205,7 +205,7 @@ system-setup:
 	@echo "⚙️  mozc設定は「設定」→「地域と言語」→「入力ソース」から変更できます"
 	@echo "💾 メモリ最適化設定は恒久的に適用されています"
 	@echo ""
-	@echo "ℹ️  一部のリポジトリでエラーが発生した場合は、以下のコマンドで修正できます ："
+	@echo "ℹ️  一部のリポジトリでエラーが発生した場合は、以下のコマンドで修正できます："
 	@echo "    make clean-repos"
 
 # IBM Plex Sans フォントのインストール（単独実行用）
