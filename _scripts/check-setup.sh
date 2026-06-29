@@ -385,7 +385,7 @@ show_recommendations() {
     
     echo ""
     echo -e "${BLUE}💡 追加の推奨事項:${NC}"
-    echo "  1. 定期的な更新: cd ~/dots && git pull && make setup-all"
+    echo "  1. 定期的な更新: cd ~/dotfiles && git pull && make setup-all"
     echo "  2. 設定バックアップ: make backup-gnome-tweaks"
     echo "  3. 詳細ヘルプ: make help"
 }
