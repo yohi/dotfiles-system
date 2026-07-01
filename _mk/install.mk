@@ -10,6 +10,7 @@ system-install:
 	$(MAKE) install-packages-deb
 	$(MAKE) install-packages-devcontainer-cli
 	$(MAKE) install-packages-uv
+	$(MAKE) install-packages-arto
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
 # Homebrewのインストール
@@ -692,6 +693,31 @@ restart-system:
 	else \
 		echo "再起動をキャンセルしました。"; \
 	fi
+
+# Arto Markdown Reader のインストール（Nix + Cachix キャッシュ）
+install-packages-arto:
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-arto,N/A) 2>/dev/null; then \
+		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-arto)"; \
+	else \
+		$(MAKE) .install-packages-arto-impl; \
+	fi
+
+.install-packages-arto-impl:
+	@echo "📦 Arto Markdown Reader をインストールしています..."
+	@if ! command -v nix >/dev/null 2>&1; then \
+		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
+	else \
+		if command -v cachix >/dev/null 2>&1; then \
+			echo "🔧 Cachix キャッシュを設定中..."; \
+			cachix use yohi-arto || echo "⚠️ Cachixキャッシュの適用に失敗しました（続行します）"; \
+		else \
+			echo "ℹ️  Cachix がインストールされていないためキャッシュ設定をスキップします"; \
+		fi; \
+		echo "📥 Nix プロファイルに Arto を追加中..."; \
+		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes"; \
+		echo "✅ Arto のインストールが完了しました。"; \
+	fi
+	@$(call create_marker,install-packages-arto,N/A)
 
 # システムのシャットダウン
 shutdown-system:
