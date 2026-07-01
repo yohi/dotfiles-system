@@ -10,6 +10,7 @@ system-install:
 	$(MAKE) install-packages-deb
 	$(MAKE) install-packages-devcontainer-cli
 	$(MAKE) install-packages-uv
+	$(MAKE) install-packages-cachix
 	$(MAKE) install-packages-arto
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
@@ -694,6 +695,38 @@ restart-system:
 		echo "再起動をキャンセルしました。"; \
 	fi
 
+# Cachix のインストール
+install-packages-cachix:
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-cachix,N/A) 2>/dev/null; then \
+		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-cachix)"; \
+	else \
+		$(MAKE) .install-packages-cachix-impl; \
+	fi
+
+.install-packages-cachix-impl:
+	@echo "📦 Cachix をインストールしています..."
+	@if ! command -v nix >/dev/null 2>&1; then \
+		echo "⚠️ Nixがインストールされていないため、Cachixのインストールをスキップします"; \
+		$(call create_marker,install-packages-cachix,N/A); \
+	else \
+		echo "📥 Nix プロファイルに Cachix を追加中..."; \
+		nix profile install nixpkgs#cachix --extra-experimental-features "nix-command flakes" || { echo "❌ Cachix のインストールに失敗しました。"; exit 1; }; \
+		echo "✅ Cachix のインストールが完了しました。"; \
+		if [ -f /etc/nix/nix.conf ]; then \
+			if ! grep -qE "^trusted-users[[:space:]]*=" /etc/nix/nix.conf; then \
+				echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
+				echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+			elif ! grep -qE "^trusted-users[[:space:]]*=.*$$USER" /etc/nix/nix.conf; then \
+				echo "🔧 Nix の信頼ユーザー設定に $$USER を追加します（要 sudo パスワード入力）..."; \
+				sudo sed -i -E "s/^(trusted-users[[:space:]]*=[[:space:]]*.*)/\1 $$USER/" /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+			fi; \
+		else \
+			echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
+			sudo mkdir -p /etc/nix && echo "trusted-users = root $$USER" | sudo tee /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+		fi; \
+		$(call create_marker,install-packages-cachix,N/A); \
+	fi
+
 # Arto Markdown Reader のインストール（Nix + Cachix キャッシュ）
 install-packages-arto:
 	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-arto,N/A) 2>/dev/null; then \
@@ -706,10 +739,12 @@ install-packages-arto:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
 	@if ! command -v nix >/dev/null 2>&1; then \
 		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
+		$(call create_marker,install-packages-arto,N/A); \
 	else \
 		if command -v cachix >/dev/null 2>&1; then \
 			echo "🔧 Cachix キャッシュを設定中..."; \
-			cachix use yohi-arto || echo "⚠️ Cachixキャッシュの適用に失敗しました（続行します）"; \
+			cachix use yohi-arto || echo "⚠️ yohi-artoキャッシュの適用に失敗しました（続行します）"; \
+			cachix use arto || echo "⚠️ artoキャッシュの適用に失敗しました（続行します）"; \
 		else \
 			echo "ℹ️  Cachix がインストールされていないためキャッシュ設定をスキップします"; \
 		fi; \
