@@ -738,7 +738,8 @@ install-packages-arto:
 	else \
 		if command -v cachix >/dev/null 2>&1; then \
 			echo "🔧 Cachix キャッシュを設定中..."; \
-			cachix use yohi-arto || echo "⚠️ Cachixキャッシュの適用に失敗しました（続行します）"; \
+			cachix use yohi-arto || echo "⚠️ yohi-artoキャッシュの適用に失敗しました（続行します）"; \
+			cachix use arto || echo "⚠️ artoキャッシュの適用に失敗しました（続行します）"; \
 		else \
 			echo "ℹ️  Cachix がインストールされていないためキャッシュ設定をスキップします"; \
 		fi; \
