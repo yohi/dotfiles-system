@@ -9,6 +9,7 @@ tap "rcmdnk/file"
 tap "romkatv/powerlevel10k"
 tap "waltarix/customs"
 tap "wezterm/wezterm-linuxbrew"
+tap "withgraphite/tap"
 # Text-based UI library
 brew "ncurses"
 # BSD-style licensed readline alternative
@@ -51,6 +52,7 @@ brew "glib"
 brew "go"
 brew "gobject-introspection"
 brew "graphviz"
+brew "withgraphite/tap/graphite"
 # brew "gtk+" # GTK2は旧式、GTK3のみで十分
 brew "gtk+3"
 brew "hadolint"
