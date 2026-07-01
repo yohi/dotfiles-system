@@ -10,6 +10,7 @@ system-install:
 	$(MAKE) install-packages-deb
 	$(MAKE) install-packages-devcontainer-cli
 	$(MAKE) install-packages-uv
+	$(MAKE) install-packages-cachix
 	$(MAKE) install-packages-arto
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
@@ -692,6 +693,25 @@ restart-system:
 		sudo reboot; \
 	else \
 		echo "再起動をキャンセルしました。"; \
+	fi
+
+# Cachix のインストール
+install-packages-cachix:
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-cachix,N/A) 2>/dev/null; then \
+		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-cachix)"; \
+	else \
+		$(MAKE) .install-packages-cachix-impl; \
+	fi
+
+.install-packages-cachix-impl:
+	@echo "📦 Cachix をインストールしています..."
+	@if ! command -v nix >/dev/null 2>&1; then \
+		echo "⚠️ Nixがインストールされていないため、Cachixのインストールをスキップします"; \
+	else \
+		echo "📥 Nix プロファイルに Cachix を追加中..."; \
+		nix profile install nixpkgs#cachix --extra-experimental-features "nix-command flakes" || { echo "❌ Cachix のインストールに失敗しました。"; exit 1; }; \
+		echo "✅ Cachix のインストールが完了しました。"; \
+		$(call create_marker,install-packages-cachix,N/A); \
 	fi
 
 # Arto Markdown Reader のインストール（Nix + Cachix キャッシュ）
