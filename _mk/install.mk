@@ -711,6 +711,15 @@ install-packages-cachix:
 		echo "📥 Nix プロファイルに Cachix を追加中..."; \
 		nix profile install nixpkgs#cachix --extra-experimental-features "nix-command flakes" || { echo "❌ Cachix のインストールに失敗しました。"; exit 1; }; \
 		echo "✅ Cachix のインストールが完了しました。"; \
+		if [ -f /etc/nix/nix.conf ]; then \
+			if ! grep -q "trusted-users" /etc/nix/nix.conf || ! grep -q "$$USER" /etc/nix/nix.conf; then \
+				echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
+				echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+			fi; \
+		else \
+			echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
+			sudo mkdir -p /etc/nix && echo "trusted-users = root $$USER" | sudo tee /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+		fi; \
 		$(call create_marker,install-packages-cachix,N/A); \
 	fi
 
