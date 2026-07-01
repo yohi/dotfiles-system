@@ -714,10 +714,10 @@ install-packages-arto:
 			echo "ℹ️  Cachix がインストールされていないためキャッシュ設定をスキップします"; \
 		fi; \
 		echo "📥 Nix プロファイルに Arto を追加中..."; \
-		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes"; \
+		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes" || { echo "❌ Arto のインストールに失敗しました。"; exit 1; }; \
 		echo "✅ Arto のインストールが完了しました。"; \
+		$(call create_marker,install-packages-arto,N/A); \
 	fi
-	@$(call create_marker,install-packages-arto,N/A)
 
 # システムのシャットダウン
 shutdown-system:
