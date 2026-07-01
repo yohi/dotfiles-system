@@ -707,14 +707,18 @@ install-packages-cachix:
 	@echo "📦 Cachix をインストールしています..."
 	@if ! command -v nix >/dev/null 2>&1; then \
 		echo "⚠️ Nixがインストールされていないため、Cachixのインストールをスキップします"; \
+		$(call create_marker,install-packages-cachix,N/A); \
 	else \
 		echo "📥 Nix プロファイルに Cachix を追加中..."; \
 		nix profile install nixpkgs#cachix --extra-experimental-features "nix-command flakes" || { echo "❌ Cachix のインストールに失敗しました。"; exit 1; }; \
 		echo "✅ Cachix のインストールが完了しました。"; \
 		if [ -f /etc/nix/nix.conf ]; then \
-			if ! grep -q "trusted-users" /etc/nix/nix.conf || ! grep -q "$$USER" /etc/nix/nix.conf; then \
+			if ! grep -qE "^trusted-users[[:space:]]*=" /etc/nix/nix.conf; then \
 				echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
 				echo "trusted-users = root $$USER" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
+			elif ! grep -qE "^trusted-users[[:space:]]*=.*$$USER" /etc/nix/nix.conf; then \
+				echo "🔧 Nix の信頼ユーザー設定に $$USER を追加します（要 sudo パスワード入力）..."; \
+				sudo sed -i -E "s/^(trusted-users[[:space:]]*=[[:space:]]*.*)/\1 $$USER/" /etc/nix/nix.conf && sudo pkill nix-daemon || echo "⚠️ 信頼ユーザーの設定に失敗しました。"; \
 			fi; \
 		else \
 			echo "🔧 Nix の信頼ユーザー設定を追加します（要 sudo パスワード入力）..."; \
@@ -735,6 +739,7 @@ install-packages-arto:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
 	@if ! command -v nix >/dev/null 2>&1; then \
 		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
+		$(call create_marker,install-packages-arto,N/A); \
 	else \
 		if command -v cachix >/dev/null 2>&1; then \
 			echo "🔧 Cachix キャッシュを設定中..."; \
