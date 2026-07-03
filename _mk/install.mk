@@ -756,7 +756,7 @@ install-packages-arto:
 		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes" || { echo "❌ Arto のインストールに失敗しました。"; exit 1; }; \
 		echo "🎨 アイコンとデスクトップエントリを設定中..."; \
 		mkdir -p ~/.local/share/icons ~/.local/share/applications; \
-		ARTO_STORE_PATH=$$(nix profile list --extra-experimental-features "nix-command flakes" | grep -A 2 "github:yohi/Arto" | grep "Store paths:" | awk '{print $$3}'); \
+		ARTO_STORE_PATH=$$(nix path-info github:yohi/Arto --extra-experimental-features "nix-command flakes" 2>/dev/null); \
 		if [ -n "$$ARTO_STORE_PATH" ]; then \
 			ICON_PATH=$$(find "$$ARTO_STORE_PATH" -name "Arto-*.png" | head -n 1); \
 			if [ -n "$$ICON_PATH" ]; then \
