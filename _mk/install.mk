@@ -779,7 +779,7 @@ install-packages-arto:
 			echo "Comment=A GitHub Markdown viewer" >> ~/.local/share/applications/arto.desktop; \
 			echo "Exec=arto" >> ~/.local/share/applications/arto.desktop; \
 			echo "StartupWMClass=arto" >> ~/.local/share/applications/arto.desktop; \
-			echo "Icon=arto" >> ~/.local/share/applications/arto.desktop; \
+			echo "Icon=$$HOME/.local/share/icons/arto.png" >> ~/.local/share/applications/arto.desktop; \
 			echo "Name=Arto" >> ~/.local/share/applications/arto.desktop; \
 			echo "Terminal=false" >> ~/.local/share/applications/arto.desktop; \
 			echo "Type=Application" >> ~/.local/share/applications/arto.desktop; \
