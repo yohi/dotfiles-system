@@ -743,7 +743,7 @@ install-packages-arto:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
 	@if ! command -v nix >/dev/null 2>&1; then \
 		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
-		$(call create_marker,install-packages-arto,N/A); \
+		$(call create_marker,install-packages-arto,N/A) \
 	else \
 		if command -v cachix >/dev/null 2>&1; then \
 			echo "🔧 Cachix キャッシュを設定中..."; \
@@ -756,7 +756,7 @@ install-packages-arto:
 		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes" || { echo "❌ Arto のインストールに失敗しました。"; exit 1; }; \
 		echo "🎨 アイコンとデスクトップエントリを設定中..."; \
 		mkdir -p ~/.local/share/icons ~/.local/share/applications; \
-		ARTO_STORE_PATH=$$(nix path-info github:yohi/Arto --extra-experimental-features "nix-command flakes" 2>/dev/null); \
+		ARTO_STORE_PATH=$$(nix path-info github:yohi/Arto --extra-experimental-features "nix-command flakes" 2>/dev/null | head -n 1); \
 		if [ -n "$$ARTO_STORE_PATH" ]; then \
 			ICON_PATH=$$(find "$$ARTO_STORE_PATH" -name "Arto-*.png" | head -n 1); \
 			if [ -n "$$ICON_PATH" ]; then \
@@ -764,11 +764,14 @@ install-packages-arto:
 				echo "✅ アイコンを配置しました: ~/.local/share/icons/arto.png"; \
 			fi; \
 		fi; \
+		ARTO_DESKTOP_SRC=""; \
 		if [ -f /usr/share/applications/Arto.desktop ]; then \
-			cp /usr/share/applications/Arto.desktop ~/.local/share/applications/arto.desktop; \
-			sed -i 's|^Icon=.*|Icon=arto|' ~/.local/share/applications/arto.desktop; \
+			ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \
 		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \
-			cp ~/.local/share/applications/arto.desktop.bk ~/.local/share/applications/arto.desktop; \
+			ARTO_DESKTOP_SRC=~/.local/share/applications/arto.desktop.bk; \
+		fi; \
+		if [ -n "$$ARTO_DESKTOP_SRC" ]; then \
+			cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \
 			sed -i 's|^Icon=.*|Icon=arto|' ~/.local/share/applications/arto.desktop; \
 		else \
 			echo "[Desktop Entry]" > ~/.local/share/applications/arto.desktop; \
@@ -783,7 +786,7 @@ install-packages-arto:
 		fi; \
 		update-desktop-database ~/.local/share/applications/ >/dev/null 2>&1 || true; \
 		echo "✅ Arto のインストールが完了しました。"; \
-		$(call create_marker,install-packages-arto,N/A); \
+		$(call create_marker,install-packages-arto,N/A) \
 	fi
 
 # システムのシャットダウン
