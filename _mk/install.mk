@@ -765,13 +765,13 @@ install-packages-arto:
 			fi; \
 		fi; \
 		ARTO_DESKTOP_SRC=""; \
-		if [ -f /usr/share/applications/Arto.desktop ]; then \\
-			ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \\
-		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \\
-			ARTO_DESKTOP_SRC=~/.local/share/applications/arto.desktop.bk; \\
-		fi; \\
-		if [ -n "$$ARTO_DESKTOP_SRC" ]; then \\
-			cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \\
+		if [ -f /usr/share/applications/Arto.desktop ]; then \
+			ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \
+		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \
+			ARTO_DESKTOP_SRC=~/.local/share/applications/arto.desktop.bk; \
+		fi; \
+		if [ -n "$$ARTO_DESKTOP_SRC" ]; then \
+			cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \
 			sed -i 's|^Icon=.*|Icon=arto|' ~/.local/share/applications/arto.desktop; \
 		else \
 			echo "[Desktop Entry]" > ~/.local/share/applications/arto.desktop; \
