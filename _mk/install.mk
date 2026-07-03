@@ -533,9 +533,9 @@ install-packages-uv:
 		echo "✅ uv は既にインストールされています"; \
 		echo "🔄 uv をアップデート中..."; \
 		if command -v brew >/dev/null 2>&1 && brew list uv >/dev/null 2>&1; then \
-			brew upgrade uv || brew link --overwrite uv || true; \
+			brew upgrade uv || brew link --overwrite uv || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
 		else \
-			uv self update || true; \
+			uv self update || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
 		fi; \
 	elif command -v brew >/dev/null 2>&1; then \
 		echo "📦 Homebrew で uv をインストール中..."; \
