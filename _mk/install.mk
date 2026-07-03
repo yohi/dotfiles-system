@@ -533,9 +533,9 @@ install-packages-uv:
 		echo "✅ uv は既にインストールされています"; \
 		echo "🔄 uv をアップデート中..."; \
 		if command -v brew >/dev/null 2>&1 && brew list uv >/dev/null 2>&1; then \
-			brew upgrade uv || brew link --overwrite uv; \
+			brew upgrade uv || brew link --overwrite uv || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
 		else \
-			uv self update || true; \
+			uv self update || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
 		fi; \
 	elif command -v brew >/dev/null 2>&1; then \
 		echo "📦 Homebrew で uv をインストール中..."; \
@@ -743,7 +743,7 @@ install-packages-arto:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
 	@if ! command -v nix >/dev/null 2>&1; then \
 		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
-		$(call create_marker,install-packages-arto,N/A); \
+		$(call create_marker,install-packages-arto,N/A) \
 	else \
 		if command -v cachix >/dev/null 2>&1; then \
 			echo "🔧 Cachix キャッシュを設定中..."; \
@@ -756,7 +756,7 @@ install-packages-arto:
 		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes" || { echo "❌ Arto のインストールに失敗しました。"; exit 1; }; \
 		echo "🎨 アイコンとデスクトップエントリを設定中..."; \
 		mkdir -p ~/.local/share/icons ~/.local/share/applications; \
-		ARTO_STORE_PATH=$$(nix profile list --extra-experimental-features "nix-command flakes" | grep -A 2 "github:yohi/Arto" | grep "Store paths:" | awk '{print $$3}'); \
+		ARTO_STORE_PATH=$$(nix path-info github:yohi/Arto --extra-experimental-features "nix-command flakes" 2>/dev/null | head -n 1); \
 		if [ -n "$$ARTO_STORE_PATH" ]; then \
 			ICON_PATH=$$(find "$$ARTO_STORE_PATH" -name "Arto-*.png" | head -n 1); \
 			if [ -n "$$ICON_PATH" ]; then \
@@ -764,12 +764,15 @@ install-packages-arto:
 				echo "✅ アイコンを配置しました: ~/.local/share/icons/arto.png"; \
 			fi; \
 		fi; \
-		if [ -f /usr/share/applications/Arto.desktop ]; then \
-			cp /usr/share/applications/Arto.desktop ~/.local/share/applications/arto.desktop; \
-			sed -i 's|^Icon=.*|Icon='$$HOME'/.local/share/icons/arto.png|' ~/.local/share/applications/arto.desktop; \
-		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \
-			cp ~/.local/share/applications/arto.desktop.bk ~/.local/share/applications/arto.desktop; \
-			sed -i 's|^Icon=.*|Icon='$$HOME'/.local/share/icons/arto.png|' ~/.local/share/applications/arto.desktop; \
+		ARTO_DESKTOP_SRC=""; \
+		if [ -f /usr/share/applications/Arto.desktop ]; then \\
+			ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \\
+		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \\
+			ARTO_DESKTOP_SRC=~/.local/share/applications/arto.desktop.bk; \\
+		fi; \\
+		if [ -n "$$ARTO_DESKTOP_SRC" ]; then \\
+			cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \\
+			sed -i 's|^Icon=.*|Icon=arto|' ~/.local/share/applications/arto.desktop; \
 		else \
 			echo "[Desktop Entry]" > ~/.local/share/applications/arto.desktop; \
 			echo "Categories=Utility;" >> ~/.local/share/applications/arto.desktop; \
@@ -783,7 +786,7 @@ install-packages-arto:
 		fi; \
 		update-desktop-database ~/.local/share/applications/ >/dev/null 2>&1 || true; \
 		echo "✅ Arto のインストールが完了しました。"; \
-		$(call create_marker,install-packages-arto,N/A); \
+		$(call create_marker,install-packages-arto,N/A) \
 	fi
 
 # システムのシャットダウン
