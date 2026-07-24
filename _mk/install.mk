@@ -195,12 +195,14 @@ install-packages-deb:
 	@if [ "$$SKIP_GUI" != "1" ]; then \
 		if ! command -v code >/dev/null 2>&1; then \
 			echo "📥 Microsoft GPGキーを追加中..."; \
-			wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg; \
-			sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/; \
+			TEMP_KEY=$$(mktemp); \
+			trap 'rm -f "$$TEMP_KEY" packages.microsoft.gpg' EXIT; \
+			curl -fsSL https://packages.microsoft.com/keys/microsoft.asc -o "$$TEMP_KEY" && \
+				gpg --dearmor < "$$TEMP_KEY" > packages.microsoft.gpg || { echo "❌ Microsoft GPGキーの取得または変換に失敗しました"; exit 1; }; \
+			sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/ || { echo "❌ Microsoft GPGキーの配置に失敗しました"; exit 1; }; \
 			sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'; \
 			sudo apt update -q 2>/dev/null || echo "⚠️  一部のリポジトリで問題がありますが、処理を続行します"; \
 			sudo DEBIAN_FRONTEND=noninteractive apt install -y code; \
-			rm -f packages.microsoft.gpg; \
 		else \
 			echo "✅ Visual Studio Code は既にインストールされています"; \
 		fi; \
