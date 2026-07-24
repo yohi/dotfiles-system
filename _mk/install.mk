@@ -805,9 +805,16 @@ install-packages-arto:
 	fi; \
 	trap 'rm -rf "$$TEMP_DIR"' EXIT; \
 	echo "📥 最新のリリース情報を取得中..."; \
-	if ! curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
-		echo "❌ 最新リリース情報の取得に失敗しました。"; \
-		exit 1; \
+	if [ -n "$$GITHUB_TOKEN" ]; then \
+		if ! curl -fsSL -H "Authorization: Bearer $$GITHUB_TOKEN" https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
+			echo "❌ 最新リリース情報の取得に失敗しました。"; \
+			exit 1; \
+		fi; \
+	else \
+		if ! curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
+			echo "❌ 最新リリース情報の取得に失敗しました。"; \
+			exit 1; \
+		fi; \
 	fi; \
 	URL=$$(jq -er --arg arch "$$ARCH" '[.assets[] | select(.state == "uploaded" and (.name | startswith("arto_")) and (.name | endswith("_\($$arch).deb"))) | .browser_download_url] | if length == 1 then .[0] else error("expected exactly one matching Arto asset") end' "$$TEMP_DIR/release.json") || { \
 		echo "❌ $$ARCH 用の .deb パッケージを一意に特定できませんでした。"; \
@@ -819,7 +826,7 @@ install-packages-arto:
 		exit 1; \
 	fi; \
 	echo "🔧 インストール中..."; \
-	sudo dpkg -i "$$TEMP_DIR/arto.deb" || sudo apt-get install -f -y || { echo "❌ インストールに失敗しました。"; exit 1; }; \
+	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$$TEMP_DIR/arto.deb" || { echo "❌ インストールに失敗しました。"; exit 1; }; \
 	echo "✅ Arto のインストールが完了しました。"; \
 	$(call create_marker,install-packages-arto,N/A)
 
