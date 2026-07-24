@@ -269,9 +269,27 @@ install-packages-deb:
 	@echo "📝 GitHub CLI (gh) のインストール中..."
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo "📥 GitHub CLI リポジトリを追加中..."; \
-		sudo mkdir -p -m 755 /etc/apt/keyrings; \
-		wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null; \
-		sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg; \
+		if ! sudo install -d -m 755 /etc/apt/keyrings; then \
+			echo "❌ GitHub CLI キーリングディレクトリを作成できませんでした"; \
+			exit 1; \
+		fi; \
+		if ! KEYRING_FILE=$$(mktemp); then \
+			echo "❌ GitHub CLI キーリング用の一時ファイルを作成できませんでした"; \
+			exit 1; \
+		fi; \
+		trap 'rm -f "$$KEYRING_FILE"' EXIT; \
+		if ! curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$$KEYRING_FILE"; then \
+			echo "❌ GitHub CLI キーリングのダウンロードに失敗しました"; \
+			exit 1; \
+		fi; \
+		if [ ! -s "$$KEYRING_FILE" ]; then \
+			echo "❌ GitHub CLI キーリングが空です"; \
+			exit 1; \
+		fi; \
+		if ! sudo install -o root -g root -m 644 "$$KEYRING_FILE" /etc/apt/keyrings/githubcli-archive-keyring.gpg; then \
+			echo "❌ GitHub CLI キーリングを配置できませんでした"; \
+			exit 1; \
+		fi; \
 		echo "deb [arch=$$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null; \
 		sudo apt update -q 2>/dev/null || true; \
 		sudo DEBIAN_FRONTEND=noninteractive apt install -y gh; \
@@ -290,18 +308,6 @@ install-packages-deb:
 	else \
 		echo "✅ Zsh は既にインストールされています"; \
 	fi
-	@echo "📝 Node.js のインストール中..."
-	@if ! command -v node >/dev/null 2>&1; then \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y nodejs; \
-	else \
-		echo "✅ Node.js は既にインストールされています"; \
-	fi
-	@echo "📝 npm のインストール中..."
-	@if ! command -v npm >/dev/null 2>&1; then \
-		sudo DEBIAN_FRONTEND=noninteractive apt install -y npm; \
-	else \
-		echo "✅ npm は既にインストールされています"; \
-	fi
 	@$(MAKE) install-packages-gcloud
 	@$(MAKE) install-packages-workspace-cli
 	@$(call create_marker,install-packages-deb,N/A)
@@ -316,8 +322,6 @@ install-packages-deb:
 	@echo "   - GitHub CLI"
 	@echo "   - Neovim"
 	@echo "   - Zsh"
-	@echo "   - Node.js"
-	@echo "   - npm"
 	@echo "   - Google Cloud CLI"
 	@echo "   - Google Workspace CLI (gws)"
 
@@ -782,20 +786,40 @@ install-packages-arto:
 
 .install-packages-arto-impl:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
-	@ARCH=$$(dpkg --print-architecture 2>/dev/null || echo "amd64"); \
-	echo "🔍 アーキテクチャ: $$ARCH"; \
-	echo "📥 最新のリリース情報を取得中..."; \
-	URL=$$(curl -s https://api.github.com/repos/arto-app/Arto/releases/latest | grep "browser_download_url" | grep -o "https://.*arto_.*_$${ARCH}\.deb" | head -n 1); \
-	if [ -z "$$URL" ]; then \
-		echo "❌ $$ARCH 用の .deb パッケージのダウンロードURLが見つかりませんでした。"; \
+	@if ! ARCH=$$(dpkg --print-architecture); then \
+		echo "❌ Debian アーキテクチャを取得できませんでした。"; \
 		exit 1; \
 	fi; \
+	case "$$ARCH" in \
+		amd64|arm64) ;; \
+		*) echo "❌ 未対応の Debian アーキテクチャです: $$ARCH"; exit 1 ;; \
+	esac; \
+	if ! command -v jq >/dev/null 2>&1; then \
+		echo "❌ jq が見つかりません。先に install-packages-apps を実行してください。"; \
+		exit 1; \
+	fi; \
+	echo "🔍 アーキテクチャ: $$ARCH"; \
+	if ! TEMP_DIR=$$(mktemp -d); then \
+		echo "❌ 一時ディレクトリを作成できませんでした。"; \
+		exit 1; \
+	fi; \
+	trap 'rm -rf "$$TEMP_DIR"' EXIT; \
+	echo "📥 最新のリリース情報を取得中..."; \
+	if ! curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
+		echo "❌ 最新リリース情報の取得に失敗しました。"; \
+		exit 1; \
+	fi; \
+	URL=$$(jq -er --arg arch "$$ARCH" '[.assets[] | select(.state == "uploaded" and (.name | startswith("arto_")) and (.name | endswith("_\($$arch).deb"))) | .browser_download_url] | if length == 1 then .[0] else error("expected exactly one matching Arto asset") end' "$$TEMP_DIR/release.json") || { \
+		echo "❌ $$ARCH 用の .deb パッケージを一意に特定できませんでした。"; \
+		exit 1; \
+	}; \
 	echo "📥 ダウンロード中: $$URL"; \
-	TEMP_DIR=$$(mktemp -d); \
-	curl -sL "$$URL" -o "$$TEMP_DIR/arto.deb" || { echo "❌ ダウンロードに失敗しました。"; rm -rf "$$TEMP_DIR"; exit 1; }; \
+	if ! curl -fsSL "$$URL" -o "$$TEMP_DIR/arto.deb"; then \
+		echo "❌ ダウンロードに失敗しました。"; \
+		exit 1; \
+	fi; \
 	echo "🔧 インストール中..."; \
-	sudo dpkg -i "$$TEMP_DIR/arto.deb" || sudo apt-get install -f -y || { echo "❌ インストールに失敗しました。"; rm -rf "$$TEMP_DIR"; exit 1; }; \
-	rm -rf "$$TEMP_DIR"; \
+	sudo dpkg -i "$$TEMP_DIR/arto.deb" || sudo apt-get install -f -y || { echo "❌ インストールに失敗しました。"; exit 1; }; \
 	echo "✅ Arto のインストールが完了しました。"; \
 	$(call create_marker,install-packages-arto,N/A)
 
