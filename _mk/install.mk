@@ -266,6 +266,48 @@ install-packages-deb:
 	else \
 		echo "⏭️ SKIP_GUI=1 のため GUIアプリケーションをスキップ"; \
 	fi
+	@echo "📝 GitHub CLI (gh) のインストール中..."
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo "📥 GitHub CLI リポジトリを追加中..."; \
+		if ! sudo install -d -m 755 /etc/apt/keyrings; then \
+			echo "❌ GitHub CLI キーリングディレクトリを作成できませんでした"; \
+			exit 1; \
+		fi; \
+		if ! KEYRING_FILE=$$(mktemp); then \
+			echo "❌ GitHub CLI キーリング用の一時ファイルを作成できませんでした"; \
+			exit 1; \
+		fi; \
+		trap 'rm -f "$$KEYRING_FILE"' EXIT; \
+		if ! curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$$KEYRING_FILE"; then \
+			echo "❌ GitHub CLI キーリングのダウンロードに失敗しました"; \
+			exit 1; \
+		fi; \
+		if [ ! -s "$$KEYRING_FILE" ]; then \
+			echo "❌ GitHub CLI キーリングが空です"; \
+			exit 1; \
+		fi; \
+		if ! sudo install -o root -g root -m 644 "$$KEYRING_FILE" /etc/apt/keyrings/githubcli-archive-keyring.gpg; then \
+			echo "❌ GitHub CLI キーリングを配置できませんでした"; \
+			exit 1; \
+		fi; \
+		echo "deb [arch=$$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null; \
+		sudo apt update -q 2>/dev/null || true; \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y gh; \
+	else \
+		echo "✅ GitHub CLI は既にインストールされています"; \
+	fi
+	@echo "📝 Neovim のインストール中..."
+	@if ! command -v nvim >/dev/null 2>&1; then \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y neovim; \
+	else \
+		echo "✅ Neovim は既にインストールされています"; \
+	fi
+	@echo "📝 Zsh のインストール中..."
+	@if ! command -v zsh >/dev/null 2>&1; then \
+		sudo DEBIAN_FRONTEND=noninteractive apt install -y zsh; \
+	else \
+		echo "✅ Zsh は既にインストールされています"; \
+	fi
 	@$(MAKE) install-packages-gcloud
 	@$(MAKE) install-packages-workspace-cli
 	@$(call create_marker,install-packages-deb,N/A)
@@ -277,6 +319,9 @@ install-packages-deb:
 	@echo "   - Chromium"
 	@echo "   - FUSE（AppImage実行用）"
 	@echo "   - WezTerm"
+	@echo "   - GitHub CLI"
+	@echo "   - Neovim"
+	@echo "   - Zsh"
 	@echo "   - Google Cloud CLI"
 	@echo "   - Google Workspace CLI (gws)"
 
@@ -731,7 +776,7 @@ install-packages-cachix:
 		$(call create_marker,install-packages-cachix,N/A); \
 	fi
 
-# Arto Markdown Reader のインストール（Nix + Cachix キャッシュ）
+# Arto Markdown Reader のインストール（GitHub Releases から .deb パッケージをインストール）
 install-packages-arto:
 	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-arto,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-arto)"; \
@@ -741,53 +786,50 @@ install-packages-arto:
 
 .install-packages-arto-impl:
 	@echo "📦 Arto Markdown Reader をインストールしています..."
-	@if ! command -v nix >/dev/null 2>&1; then \
-		echo "⚠️ Nixがインストールされていないため、Artoのインストールをスキップします"; \
-		$(call create_marker,install-packages-arto,N/A) \
+	@if ! ARCH=$$(dpkg --print-architecture); then \
+		echo "❌ Debian アーキテクチャを取得できませんでした。"; \
+		exit 1; \
+	fi; \
+	case "$$ARCH" in \
+		amd64|arm64) ;; \
+		*) echo "❌ 未対応の Debian アーキテクチャです: $$ARCH"; exit 1 ;; \
+	esac; \
+	if ! command -v jq >/dev/null 2>&1; then \
+		echo "❌ jq が見つかりません。先に install-packages-apps を実行してください。"; \
+		exit 1; \
+	fi; \
+	echo "🔍 アーキテクチャ: $$ARCH"; \
+	if ! TEMP_DIR=$$(mktemp -d); then \
+		echo "❌ 一時ディレクトリを作成できませんでした。"; \
+		exit 1; \
+	fi; \
+	trap 'rm -rf "$$TEMP_DIR"' EXIT; \
+	echo "📥 最新のリリース情報を取得中..."; \
+	if [ -n "$$GITHUB_TOKEN" ]; then \
+		if ! curl -fsSL -H "Authorization: Bearer $$GITHUB_TOKEN" https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
+			echo "❌ 最新リリース情報の取得に失敗しました。"; \
+			exit 1; \
+		fi; \
 	else \
-		if command -v cachix >/dev/null 2>&1; then \
-			echo "🔧 Cachix キャッシュを設定中..."; \
-			cachix use yohi-arto || echo "⚠️ yohi-artoキャッシュの適用に失敗しました（続行します）"; \
-			cachix use arto || echo "⚠️ artoキャッシュの適用に失敗しました（続行します）"; \
-		else \
-			echo "ℹ️  Cachix がインストールされていないためキャッシュ設定をスキップします"; \
+		if ! curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
+			echo "❌ 最新リリース情報の取得に失敗しました。"; \
+			exit 1; \
 		fi; \
-		echo "📥 Nix プロファイルに Arto を追加中..."; \
-		nix profile install github:yohi/Arto --extra-experimental-features "nix-command flakes" || { echo "❌ Arto のインストールに失敗しました。"; exit 1; }; \
-		echo "🎨 アイコンとデスクトップエントリを設定中..."; \
-		mkdir -p ~/.local/share/icons ~/.local/share/applications; \
-		ARTO_STORE_PATH=$$(nix path-info github:yohi/Arto --extra-experimental-features "nix-command flakes" 2>/dev/null | head -n 1); \
-		if [ -n "$$ARTO_STORE_PATH" ]; then \
-			ICON_PATH=$$(find "$$ARTO_STORE_PATH" -name "Arto-*.png" | head -n 1); \
-			if [ -n "$$ICON_PATH" ]; then \
-				cp "$$ICON_PATH" ~/.local/share/icons/arto.png; \
-				echo "✅ アイコンを配置しました: ~/.local/share/icons/arto.png"; \
-			fi; \
-		fi; \
-		ARTO_DESKTOP_SRC=""; \
-		if [ -f /usr/share/applications/Arto.desktop ]; then \
-			ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \
-		elif [ -f ~/.local/share/applications/arto.desktop.bk ]; then \
-			ARTO_DESKTOP_SRC=~/.local/share/applications/arto.desktop.bk; \
-		fi; \
-		if [ -n "$$ARTO_DESKTOP_SRC" ]; then \
-			cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \
-			sed -i 's|^Icon=.*|Icon=arto|' ~/.local/share/applications/arto.desktop; \
-		else \
-			echo "[Desktop Entry]" > ~/.local/share/applications/arto.desktop; \
-			echo "Categories=Utility;" >> ~/.local/share/applications/arto.desktop; \
-			echo "Comment=A GitHub Markdown viewer" >> ~/.local/share/applications/arto.desktop; \
-			echo "Exec=arto" >> ~/.local/share/applications/arto.desktop; \
-			echo "StartupWMClass=arto" >> ~/.local/share/applications/arto.desktop; \
-			echo "Icon=$$HOME/.local/share/icons/arto.png" >> ~/.local/share/applications/arto.desktop; \
-			echo "Name=Arto" >> ~/.local/share/applications/arto.desktop; \
-			echo "Terminal=false" >> ~/.local/share/applications/arto.desktop; \
-			echo "Type=Application" >> ~/.local/share/applications/arto.desktop; \
-		fi; \
-		update-desktop-database ~/.local/share/applications/ >/dev/null 2>&1 || true; \
-		echo "✅ Arto のインストールが完了しました。"; \
-		$(call create_marker,install-packages-arto,N/A) \
-	fi
+	fi; \
+	URL=$$(jq -er --arg arch "$$ARCH" '[.assets[] | select(.state == "uploaded" and (.name | startswith("arto_")) and (.name | endswith("_\($$arch).deb"))) | .browser_download_url] | if length == 1 then .[0] else error("expected exactly one matching Arto asset") end' "$$TEMP_DIR/release.json") || { \
+		echo "❌ $$ARCH 用の .deb パッケージを一意に特定できませんでした。"; \
+		exit 1; \
+	}; \
+	echo "📥 ダウンロード中: $$URL"; \
+	if ! curl -fsSL "$$URL" -o "$$TEMP_DIR/arto.deb"; then \
+		echo "❌ ダウンロードに失敗しました。"; \
+		exit 1; \
+	fi; \
+	echo "🔧 インストール中..."; \
+	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$$TEMP_DIR/arto.deb" || { echo "❌ インストールに失敗しました。"; exit 1; }; \
+	echo "✅ Arto のインストールが完了しました。"; \
+	$(call create_marker,install-packages-arto,N/A)
+
 
 # システムのシャットダウン
 shutdown-system:
