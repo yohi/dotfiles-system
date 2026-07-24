@@ -130,7 +130,6 @@ brew "yq"
 brew "zsh"
 brew "zsh-autosuggestions"
 
-
 # フォント (macOS のみ)
 if OS.mac?
   tap "homebrew/cask-fonts"
