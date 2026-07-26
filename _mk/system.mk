@@ -299,14 +299,18 @@ SYSTEMD_RUNTIME_DIR ?= /run/systemd/system
 setup-docker-service:
 	@echo "🐳 Dockerサービスの自動起動設定・起動をチェック中..."
 	@if command -v systemctl >/dev/null 2>&1 && [ -d "$(SYSTEMD_RUNTIME_DIR)" ]; then \
-		if systemctl list-unit-files docker.service >/dev/null 2>&1; then \
+		UNIT_LIST=$$(systemctl list-unit-files docker.service 2>/dev/null) || true; \
+		if echo "$$UNIT_LIST" | grep -q "^docker\.service"; then \
 			if ! sudo systemctl enable docker || ! sudo systemctl start docker; then \
 				echo "❌ Dockerサービスの有効化・起動に失敗しました" >&2; \
 				exit 1; \
 			fi; \
 			echo "✅ Dockerサービスを有効化・起動しました"; \
-		else \
+		elif systemctl list-unit-files >/dev/null 2>&1; then \
 			echo "⏭️  docker.service が見つからないためスキップします"; \
+		else \
+			echo "❌ systemctl コマンドの実行に失敗しました" >&2; \
+			exit 1; \
 		fi; \
 	else \
 		echo "⏭️  systemd環境ではないためDockerサービスの自動起動設定をスキップします"; \
