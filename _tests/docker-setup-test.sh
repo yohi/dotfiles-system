@@ -399,7 +399,10 @@ test_docker_service_skips_when_unit_missing() {
 	cat >"$bin_dir/systemctl" <<'MOCK'
 #!/usr/bin/env bash
 if [[ "$1" == "list-unit-files" ]]; then
-	exit 1
+	if [[ "$2" == "docker.service" ]]; then
+		exit 1
+	fi
+	echo "some.service enabled"
 fi
 exit 0
 MOCK
@@ -425,6 +428,9 @@ test_docker_service_success() {
 	mkdir -p "$bin_dir" "$fake_sys_dir"
 	cat >"$bin_dir/systemctl" <<'MOCK'
 #!/usr/bin/env bash
+if [[ "$1" == "list-unit-files" ]]; then
+	echo "docker.service enabled"
+fi
 exit 0
 MOCK
 	cat >"$bin_dir/sudo" <<'MOCK'
@@ -453,6 +459,9 @@ test_docker_service_failure_propagates() {
 	mkdir -p "$bin_dir" "$fake_sys_dir"
 	cat >"$bin_dir/systemctl" <<'MOCK'
 #!/usr/bin/env bash
+if [[ "$1" == "list-unit-files" ]]; then
+	echo "docker.service enabled"
+fi
 if [[ "$1" == "enable" || "$1" == "start" ]]; then
 	exit 1
 fi
