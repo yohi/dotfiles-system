@@ -46,13 +46,15 @@ include _mk/clipboard.mk
 include _mk/memory.mk
 include _mk/logid.mk
 
-.PHONY: all clean test install setup install-system setup-system init setup-docker-cli-plugins
+.PHONY: all clean test test-docker-setup install setup install-system setup-system init setup-docker-cli-plugins setup-docker-config
 
 all: install setup ## インストールとセットアップを全て実行します
 clean: ## 一時ファイルやビルド成果物を削除します
 	@$(MAKE) logid-clean
-test: ## 設定のテストを実行します（現在はプレースホルダー）
-	@echo "Running tests..."
+test: test-docker-setup ## 設定のテストを実行します
+
+test-docker-setup: ## Dockerセットアップの回帰テストを実行します
+	@bash _tests/docker-setup-test.sh
 
 init: install-system ## 初期セットアップ (install-system のエイリアス)
 
@@ -61,8 +63,8 @@ setup: setup-system ## System の設定適用
 
 prepare-system:
 	@echo "==> Preparing dotfiles-system"
-	mkdir -p $(HOME)
-	ln -sfn $(CURDIR)/Brewfile $(HOME)/.Brewfile
+	mkdir -p "$(HOME)"
+	ln -sfn "$(CURDIR)/Brewfile" "$(HOME)/.Brewfile"
 
 install-system: prepare-system
 	@echo "==> Installing dotfiles-system"

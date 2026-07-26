@@ -1,6 +1,7 @@
 # システムレベルの基本設定
 system-setup:
 	@$(MAKE) setup-docker-cli-plugins
+	@$(MAKE) setup-docker-config
 	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 	else \
@@ -210,14 +211,60 @@ system-setup:
 	@echo "    make clean-repos"
 
 # HomebrewのDocker CLIプラグインを標準探索先へリンク
+BREW_CANDIDATES ?= $(HOME_DIR)/.linuxbrew/bin/brew:/home/linuxbrew/.linuxbrew/bin/brew:/opt/homebrew/bin/brew
+
 setup-docker-cli-plugins:
 	@echo "🐳 Docker CLIプラグインを設定中..."
-	@if command -v brew >/dev/null 2>&1; then \
-		plugin_dir="$$(brew --prefix)/lib/docker/cli-plugins"; \
-		mkdir -p "$(HOME_DIR)/.docker/cli-plugins"; \
+	@brew_command="$$(command -v brew 2>/dev/null || true)"; \
+	if [ -z "$$brew_command" ]; then \
+		brew_candidates="$(BREW_CANDIDATES)"; \
+		while [ -n "$$brew_candidates" ]; do \
+			case "$$brew_candidates" in \
+				*:*) \
+					brew_candidate="$${brew_candidates%%:*}"; \
+					brew_candidates="$${brew_candidates#*:}"; \
+					;; \
+				*) \
+					brew_candidate="$$brew_candidates"; \
+					brew_candidates=""; \
+					;; \
+			esac; \
+			if [ -x "$$brew_candidate" ]; then \
+				if ! brew_shellenv="$$("$$brew_candidate" shellenv)"; then \
+					echo "❌ Homebrew環境の初期化に失敗しました: $$brew_candidate" >&2; \
+					exit 1; \
+				fi; \
+				eval "$$brew_shellenv"; \
+				brew_command="$$(command -v brew 2>/dev/null || true)"; \
+				if [ -z "$$brew_command" ]; then \
+					echo "❌ Homebrew環境の初期化後もbrewが見つかりません: $$brew_candidate" >&2; \
+					exit 1; \
+				fi; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ -n "$$brew_command" ]; then \
+		if ! brew_prefix="$$("$$brew_command" --prefix)" || [ -z "$$brew_prefix" ]; then \
+			echo "❌ Homebrew prefixの取得に失敗しました" >&2; \
+			exit 1; \
+		fi; \
+		plugin_dir="$$brew_prefix/lib/docker/cli-plugins"; \
+		if ! mkdir -p "$(HOME_DIR)/.docker/cli-plugins"; then \
+			echo "❌ Docker CLIプラグインディレクトリの作成に失敗しました" >&2; \
+			exit 1; \
+		fi; \
 		for plugin in docker-compose docker-buildx; do \
 			if [ -e "$$plugin_dir/$$plugin" ]; then \
-				ln -sfn "$$plugin_dir/$$plugin" "$(HOME_DIR)/.docker/cli-plugins/$$plugin"; \
+				plugin_destination="$(HOME_DIR)/.docker/cli-plugins/$$plugin"; \
+				if { [ -e "$$plugin_destination" ] || [ -L "$$plugin_destination" ]; } && [ ! -L "$$plugin_destination" ]; then \
+					echo "❌ 既存のDocker CLIプラグインを変更できません: $$plugin_destination" >&2; \
+					exit 1; \
+				fi; \
+				if ! ln -sfn "$$plugin_dir/$$plugin" "$$plugin_destination"; then \
+					echo "❌ $$plugin のリンク作成に失敗しました" >&2; \
+					exit 1; \
+				fi; \
 				echo "✅ $$plugin をリンクしました"; \
 			else \
 				echo "⚠️  $$plugin が見つかりません。brew bundle後に再実行してください"; \
@@ -225,6 +272,25 @@ setup-docker-cli-plugins:
 		done; \
 	else \
 		echo "⏭️  Homebrewが見つからないためDocker CLIプラグイン設定をスキップします"; \
+	fi
+
+# Docker設定が存在しない場合のみ初期設定を配置
+setup-docker-config:
+	@config_source="$(REPO_ROOT)/docker/config.json"; \
+	config_path="$(HOME_DIR)/.docker/config.json"; \
+	if [ -e "$$config_path" ] || [ -L "$$config_path" ]; then \
+		echo "⏭️  Docker設定が既に存在するため初期設定をスキップします"; \
+	elif [ ! -f "$$config_source" ]; then \
+		echo "❌ Docker初期設定が見つかりません: $$config_source" >&2; \
+		exit 1; \
+	elif ! mkdir -p "$(HOME_DIR)/.docker"; then \
+		echo "❌ Docker設定ディレクトリの作成に失敗しました" >&2; \
+		exit 1; \
+	elif ! install -m 0600 "$$config_source" "$$config_path"; then \
+		echo "❌ Docker初期設定の配置に失敗しました" >&2; \
+		exit 1; \
+	else \
+		echo "✅ Docker設定を初期化しました"; \
 	fi
 
 # IBM Plex Sans フォントのインストール（単独実行用）
