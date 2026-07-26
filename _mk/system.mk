@@ -2,6 +2,7 @@
 system-setup:
 	@$(MAKE) setup-docker-cli-plugins || echo "⚠️  Docker CLIプラグイン設定に失敗しましたが、処理を続行します"
 	@$(MAKE) setup-docker-config || echo "⚠️  Docker設定に失敗しましたが、処理を続行します"
+	@$(MAKE) setup-docker-service || echo "⚠️  Dockerサービスの有効化・起動に失敗しましたが、処理を続行します"
 	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 	else \
@@ -290,6 +291,21 @@ setup-docker-config:
 		exit 1; \
 	else \
 		echo "✅ Docker設定を初期化しました"; \
+	fi
+
+# Dockerサービスがインストールされていれば自動起動設定および起動を実行
+setup-docker-service:
+	@echo "🐳 Dockerサービスの自動起動設定・起動をチェック中..."
+	@if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then \
+		if systemctl list-unit-files docker.service >/dev/null 2>&1; then \
+			sudo systemctl enable docker || true; \
+			sudo systemctl start docker || true; \
+			echo "✅ Dockerサービスを有効化・起動しました"; \
+		else \
+			echo "⏭️  docker.service が見つからないためスキップします"; \
+		fi; \
+	else \
+		echo "⏭️  systemd環境ではないためDockerサービスの自動起動設定をスキップします"; \
 	fi
 
 # IBM Plex Sans フォントのインストール（単独実行用）
