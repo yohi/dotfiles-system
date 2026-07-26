@@ -34,7 +34,7 @@ ifndef SKIP_GUI
 endif
 
 # Global variables
-HOME_DIR := $(HOME)
+HOME_DIR ?= $(HOME)
 REPO_ROOT := $(CURDIR)
 
 # Include individual modules
@@ -63,8 +63,8 @@ setup: setup-system ## System の設定適用
 
 prepare-system:
 	@echo "==> Preparing dotfiles-system"
-	mkdir -p "$(HOME)"
-	ln -sfn "$(CURDIR)/Brewfile" "$(HOME)/.Brewfile"
+	mkdir -p "$(HOME_DIR)"
+	ln -sfn "$(CURDIR)/Brewfile" "$(HOME_DIR)/.Brewfile"
 
 install-system: prepare-system
 	@echo "==> Installing dotfiles-system"

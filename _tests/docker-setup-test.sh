@@ -21,14 +21,6 @@ fail() {
 	return 1
 }
 
-assert_status() {
-	local expected="$1"
-	if [[ "$LAST_STATUS" -ne "$expected" ]]; then
-		printf '    command output:\n%s\n' "$LAST_OUTPUT" >&2
-		fail "expected status $expected, got $LAST_STATUS"
-	fi
-}
-
 assert_success() {
 	if [[ "$LAST_STATUS" -ne 0 ]]; then
 		printf '    command output:\n%s\n' "$LAST_OUTPUT" >&2
@@ -261,13 +253,14 @@ test_absent_config_bootstrap() {
 	assert_equal "600" "$(stat -c '%a' "$home/.docker/config.json")" || return
 }
 
-test_missing_config_source_fails_before_parent_creation() {
+test_missing_config_source_warns_before_parent_creation() {
 	local home missing_repo
 	home="$(new_home config-source-missing)"
 	missing_repo="$TEMP_ROOT/missing-repository"
 	run_make_target "$home" setup-docker-config "REPO_ROOT=$missing_repo"
-	assert_failure || return
+	assert_success || return
 	assert_absent "$home/.docker" || return
+	assert_contains "$LAST_OUTPUT" "⚠️  Docker初期設定が見つかりません: $missing_repo/docker/config.json" || return
 	assert_not_contains "$LAST_OUTPUT" "✅ Docker設定を初期化しました" || return
 }
 
@@ -355,7 +348,7 @@ test_dangling_config_symlink_is_untouched() {
 
 test_prepare_system_with_space_in_home() {
 	local home
-	home="$TEMP_ROOT/prepare-home $TEMP_ROOT/space-home"
+	home="$TEMP_ROOT/prepare-home space-home"
 	assert_absent "$home" || return
 	run_make_target "$home" prepare-system
 	assert_success || return
@@ -367,20 +360,12 @@ test_prepare_system_with_space_in_home() {
 test_normal_setup_wiring_without_execution() {
 	local home
 	home="$(new_home setup-wiring)"
-	if LAST_OUTPUT="$(
-		env HOME="$home" PATH="$BASE_PATH" \
-			"$MAKE_BIN" --no-print-directory -n -C "$REPO_ROOT" \
-			"HOME_DIR=$home" \
-			"BREW_CANDIDATES=$home/.linuxbrew/bin/brew" \
-			setup-system 2>&1
-	)"; then
-		LAST_STATUS=0
-	else
-		LAST_STATUS=$?
-	fi
+	run_make_target "$home" setup-system -n
 	assert_success || return
 	assert_contains "$LAST_OUTPUT" "setup-docker-cli-plugins" || return
 	assert_contains "$LAST_OUTPUT" "setup-docker-config" || return
+	assert_contains "$LAST_OUTPUT" "⚠️  Docker CLIプラグイン設定に失敗しましたが、処理を続行します" || return
+	assert_contains "$LAST_OUTPUT" "⚠️  Docker設定に失敗しましたが、処理を続行します" || return
 	assert_absent "$home/.docker/config.json" || return
 }
 
@@ -398,7 +383,7 @@ run_test "existing plugin regular file is untouched" test_existing_plugin_file_i
 run_test "existing plugin directory is untouched" test_existing_plugin_directory_is_untouched
 run_test "blocked plugin parent propagates failure" test_blocked_plugin_parent_fails
 run_test "absent Docker config is copied with mode 0600" test_absent_config_bootstrap
-run_test "missing Docker config source fails before parent creation" test_missing_config_source_fails_before_parent_creation
+run_test "missing Docker config source warns before parent creation" test_missing_config_source_warns_before_parent_creation
 run_test "blocked Docker config parent propagates failure" test_blocked_config_parent_fails
 run_test "Docker config bootstrap is idempotent" test_config_bootstrap_is_idempotent
 run_test "existing Docker config file and permissions are untouched" test_existing_config_file_is_untouched

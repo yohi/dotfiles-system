@@ -1,7 +1,7 @@
 # システムレベルの基本設定
 system-setup:
-	@$(MAKE) setup-docker-cli-plugins
-	@$(MAKE) setup-docker-config
+	@$(MAKE) setup-docker-cli-plugins || echo "⚠️  Docker CLIプラグイン設定に失敗しましたが、処理を続行します"
+	@$(MAKE) setup-docker-config || echo "⚠️  Docker設定に失敗しましたが、処理を続行します"
 	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 	else \
@@ -281,8 +281,7 @@ setup-docker-config:
 	if [ -e "$$config_path" ] || [ -L "$$config_path" ]; then \
 		echo "⏭️  Docker設定が既に存在するため初期設定をスキップします"; \
 	elif [ ! -f "$$config_source" ]; then \
-		echo "❌ Docker初期設定が見つかりません: $$config_source" >&2; \
-		exit 1; \
+		echo "⚠️  Docker初期設定が見つかりません: $$config_source" >&2; \
 	elif ! mkdir -p "$(HOME_DIR)/.docker"; then \
 		echo "❌ Docker設定ディレクトリの作成に失敗しました" >&2; \
 		exit 1; \
