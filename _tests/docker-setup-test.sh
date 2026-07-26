@@ -364,9 +364,122 @@ test_normal_setup_wiring_without_execution() {
 	assert_success || return
 	assert_contains "$LAST_OUTPUT" "setup-docker-cli-plugins" || return
 	assert_contains "$LAST_OUTPUT" "setup-docker-config" || return
+	assert_contains "$LAST_OUTPUT" "setup-docker-service" || return
 	assert_contains "$LAST_OUTPUT" "⚠️  Docker CLIプラグイン設定に失敗しましたが、処理を続行します" || return
 	assert_contains "$LAST_OUTPUT" "⚠️  Docker設定に失敗しましたが、処理を続行します" || return
+	assert_contains "$LAST_OUTPUT" "⚠️  Dockerサービスの有効化・起動に失敗しましたが、処理を続行します" || return
 	assert_absent "$home/.docker/config.json" || return
+}
+
+test_docker_service_skips_when_not_systemd() {
+	local home bin_dir
+	home="$(new_home docker-service-non-systemd)"
+	bin_dir="$TEMP_ROOT/mock-bin-no-systemctl"
+	mkdir -p "$bin_dir"
+
+	LAST_OUTPUT="$(
+		env HOME="$home" PATH="$bin_dir:$BASE_PATH" \
+			"$MAKE_BIN" --no-print-directory -C "$REPO_ROOT" \
+			"HOME_DIR=$home" \
+			setup-docker-service 2>&1
+	)" && LAST_STATUS=0 || LAST_STATUS=$?
+
+	assert_success || return
+	if [[ ! -d /run/systemd/system ]] || ! command -v systemctl >/dev/null 2>&1; then
+		assert_contains "$LAST_OUTPUT" "systemd環境ではないため" || return
+	fi
+}
+
+test_docker_service_skips_when_unit_missing() {
+	local home bin_dir
+	home="$(new_home docker-service-no-unit)"
+	bin_dir="$TEMP_ROOT/mock-bin-no-unit"
+	mkdir -p "$bin_dir" "$TEMP_ROOT/fake-systemd/system"
+	cat >"$bin_dir/systemctl" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "list-unit-files" ]]; then
+	exit 1
+fi
+exit 0
+MOCK
+	chmod +x "$bin_dir/systemctl"
+
+	LAST_OUTPUT="$(
+		env HOME="$home" PATH="$bin_dir:$BASE_PATH" \
+			"$MAKE_BIN" --no-print-directory -C "$REPO_ROOT" \
+			"HOME_DIR=$home" \
+			setup-docker-service 2>&1
+	)" && LAST_STATUS=0 || LAST_STATUS=$?
+
+	# Note: test uses /run/systemd/system check, so if /run/systemd/system exists on test runner machine, it proceeds to list-unit-files
+	assert_success || return
+}
+
+test_docker_service_success() {
+	local home bin_dir
+	home="$(new_home docker-service-success)"
+	bin_dir="$TEMP_ROOT/mock-bin-success"
+	mkdir -p "$bin_dir"
+	cat >"$bin_dir/systemctl" <<'MOCK'
+#!/usr/bin/env bash
+exit 0
+MOCK
+	cat >"$bin_dir/sudo" <<'MOCK'
+#!/usr/bin/env bash
+"$@"
+MOCK
+	chmod +x "$bin_dir/systemctl" "$bin_dir/sudo"
+
+	# Fake /run/systemd/system if needed by path prefixing or check
+	if [[ ! -d /run/systemd/system ]]; then
+		run_make_target "$home" setup-docker-service
+		assert_success || return
+		assert_contains "$LAST_OUTPUT" "systemd環境ではないため" || return
+		return 0
+	fi
+
+	LAST_OUTPUT="$(
+		env HOME="$home" PATH="$bin_dir:$BASE_PATH" \
+			"$MAKE_BIN" --no-print-directory -C "$REPO_ROOT" \
+			"HOME_DIR=$home" \
+			setup-docker-service 2>&1
+	)" && LAST_STATUS=0 || LAST_STATUS=$?
+
+	assert_success || return
+	assert_contains "$LAST_OUTPUT" "✅ Dockerサービスを有効化・起動しました" || return
+}
+
+test_docker_service_failure_propagates() {
+	local home bin_dir
+	home="$(new_home docker-service-failure)"
+	bin_dir="$TEMP_ROOT/mock-bin-failure"
+	mkdir -p "$bin_dir"
+	cat >"$bin_dir/systemctl" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "enable" || "$1" == "start" ]]; then
+	exit 1
+fi
+exit 0
+MOCK
+	cat >"$bin_dir/sudo" <<'MOCK'
+#!/usr/bin/env bash
+"$@"
+MOCK
+	chmod +x "$bin_dir/systemctl" "$bin_dir/sudo"
+
+	if [[ ! -d /run/systemd/system ]]; then
+		return 0
+	fi
+
+	LAST_OUTPUT="$(
+		env HOME="$home" PATH="$bin_dir:$BASE_PATH" \
+			"$MAKE_BIN" --no-print-directory -C "$REPO_ROOT" \
+			"HOME_DIR=$home" \
+			setup-docker-service 2>&1
+	)" && LAST_STATUS=0 || LAST_STATUS=$?
+
+	assert_failure || return
+	assert_contains "$LAST_OUTPUT" "❌ Dockerサービスの有効化・起動に失敗しました" || return
 }
 
 if PATH="$BASE_PATH" command -v brew >/dev/null 2>&1; then
@@ -392,6 +505,10 @@ run_test "existing Docker config symlink is untouched" test_existing_config_syml
 run_test "dangling Docker config symlink is untouched" test_dangling_config_symlink_is_untouched
 run_test "prepare-system supports a HOME path containing spaces" test_prepare_system_with_space_in_home
 run_test "normal setup wires Docker targets without executing recipes" test_normal_setup_wiring_without_execution
+run_test "Docker service setup skips when not in systemd" test_docker_service_skips_when_not_systemd
+run_test "Docker service setup skips when docker.service unit is missing" test_docker_service_skips_when_unit_missing
+run_test "Docker service setup succeeds when systemctl commands succeed" test_docker_service_success
+run_test "Docker service setup fails when systemctl enable or start fails" test_docker_service_failure_propagates
 
 if [[ "$TESTS_FAILED" -ne 0 ]]; then
 	printf '%d of %d tests failed.\n' "$TESTS_FAILED" "$TESTS_RUN" >&2

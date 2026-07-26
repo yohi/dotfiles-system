@@ -298,8 +298,10 @@ setup-docker-service:
 	@echo "🐳 Dockerサービスの自動起動設定・起動をチェック中..."
 	@if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then \
 		if systemctl list-unit-files docker.service >/dev/null 2>&1; then \
-			sudo systemctl enable docker || true; \
-			sudo systemctl start docker || true; \
+			if ! sudo systemctl enable docker || ! sudo systemctl start docker; then \
+				echo "❌ Dockerサービスの有効化・起動に失敗しました" >&2; \
+				exit 1; \
+			fi; \
 			echo "✅ Dockerサービスを有効化・起動しました"; \
 		else \
 			echo "⏭️  docker.service が見つからないためスキップします"; \
