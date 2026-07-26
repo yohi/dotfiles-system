@@ -1,5 +1,6 @@
 # システムレベルの基本設定
 system-setup:
+	@$(MAKE) setup-docker-cli-plugins
 	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 	else \
@@ -8,7 +9,7 @@ system-setup:
 
 .system-setup-impl:
 	@echo "🔧 システムレベルの基本設定を開始..."
-
+	
 	# tzdataの入力を省略するための設定
 	@echo "🕐 tzdataの自動設定を行います..."
 	@echo "tzdata tzdata/Areas select Asia" | sudo debconf-set-selections
@@ -207,6 +208,24 @@ system-setup:
 	@echo ""
 	@echo "ℹ️  一部のリポジトリでエラーが発生した場合は、以下のコマンドで修正できます："
 	@echo "    make clean-repos"
+
+# HomebrewのDocker CLIプラグインを標準探索先へリンク
+setup-docker-cli-plugins:
+	@echo "🐳 Docker CLIプラグインを設定中..."
+	@if command -v brew >/dev/null 2>&1; then \
+		plugin_dir="$$(brew --prefix)/lib/docker/cli-plugins"; \
+		mkdir -p "$(HOME_DIR)/.docker/cli-plugins"; \
+		for plugin in docker-compose docker-buildx; do \
+			if [ -e "$$plugin_dir/$$plugin" ]; then \
+				ln -sfn "$$plugin_dir/$$plugin" "$(HOME_DIR)/.docker/cli-plugins/$$plugin"; \
+				echo "✅ $$plugin をリンクしました"; \
+			else \
+				echo "⚠️  $$plugin が見つかりません。brew bundle後に再実行してください"; \
+			fi; \
+		done; \
+	else \
+		echo "⏭️  Homebrewが見つからないためDocker CLIプラグイン設定をスキップします"; \
+	fi
 
 # IBM Plex Sans フォントのインストール（単独実行用）
 install-packages-ibm-plex-fonts:
