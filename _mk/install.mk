@@ -11,8 +11,51 @@ system-install:
 	$(MAKE) install-packages-devcontainer-cli
 	$(MAKE) install-packages-uv
 	$(MAKE) install-packages-cachix
+	$(MAKE) install-packages-docker
 	$(MAKE) install-packages-arto
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
+
+# Rootless Dockerのインストール
+install-packages-docker:
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-docker,N/A) 2>/dev/null; then \
+		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-docker)"; \
+	else \
+		$(MAKE) .install-packages-docker-impl; \
+	fi
+
+.install-packages-docker-impl:
+	@echo "🐳 Rootless Dockerのインストールを開始..."
+	@if command -v apt-get >/dev/null 2>&1; then \
+		echo "📦 Rootless Dockerに必要なシステム依存パッケージ(uidmap, dbus-user-session, slirp4netns, iptables)をインストール中..."; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get update -q 2>/dev/null || true; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y uidmap dbus-user-session slirp4netns iptables || { echo "❌ 前提パッケージのインストールに失敗しました"; exit 1; }; \
+		sudo modprobe ip_tables 2>/dev/null || true; \
+		sudo modprobe ip6_tables 2>/dev/null || true; \
+		sudo modprobe nf_tables 2>/dev/null || true; \
+	fi
+	@if [ -f "$(REPO_ROOT)/_scripts/setup-apparmor.sh" ]; then \
+		echo "🛡️  AppArmorの設定を実行中..."; \
+		bash "$(REPO_ROOT)/_scripts/setup-apparmor.sh" || echo "⚠️  AppArmorの設定に失敗しましたが、処理を続行します"; \
+	fi
+	@if [ ! -x "$(HOME_DIR)/bin/dockerd-rootless.sh" ] && ! command -v dockerd-rootless.sh >/dev/null 2>&1; then \
+		echo "📥 rootless Docker インストールスクリプトを取得して実行中..."; \
+		curl -fsSL https://get.docker.com/rootless | sh || \
+		SKIP_IPTABLES=1 curl -fsSL https://get.docker.com/rootless | sh || { echo "❌ Rootless Dockerのインストールに失敗しました"; exit 1; }; \
+		echo "✅ Rootless Dockerのダウンロードが完了しました"; \
+	fi
+	@if [ -x "$(HOME_DIR)/bin/dockerd-rootless-setuptool.sh" ]; then \
+		echo "⚙️ Rootless Dockerのセットアップツールを実行中..."; \
+		"$(HOME_DIR)/bin/dockerd-rootless-setuptool.sh" install || echo "⚠️  setuptoolの実行で警告が発生しましたが処理を続行します"; \
+	fi
+	@echo "⚙️ Rootless Docker サービスおよびCLIコンテキストを初期化中..."
+	@if command -v systemctl >/dev/null 2>&1 && systemctl --user >/dev/null 2>&1; then \
+		systemctl --user daemon-reload 2>/dev/null || true; \
+		systemctl --user enable docker.service 2>/dev/null || true; \
+		systemctl --user start docker.service 2>/dev/null || echo "⚠️  docker.service の起動に失敗しましたが、処理を続行します"; \
+	fi
+	@PATH="$(HOME_DIR)/bin:$(PATH)" docker context use rootless 2>/dev/null || true
+	@$(call create_marker,install-packages-docker,N/A)
+
 
 # Homebrewのインストール
 install-packages-homebrew:
@@ -554,20 +597,28 @@ install-packages-chrome-beta:
 # devcontainer-cli のインストール
 install-packages-devcontainer-cli:
 	@echo "📦 @devcontainers/cli をインストールしています..."
-	@if ! command -v npm >/dev/null 2>&1; then \
-		echo "❌ npm がインストールされていません"; \
-		exit 1; \
-	fi
 	@if command -v devcontainer >/dev/null 2>&1; then \
 		echo "✅ @devcontainers/cli は既にインストールされています"; \
-	else \
-		echo "📥 @devcontainers/cli をグローバルにインストール中..."; \
+	elif command -v npm >/dev/null 2>&1; then \
+		echo "📥 @devcontainers/cli を npm でグローバルにインストール中..."; \
 		if npm install -g @devcontainers/cli; then \
 			echo "✅ @devcontainers/cli のインストールが完了しました"; \
 		else \
 			echo "❌ @devcontainers/cli のインストールに失敗しました"; \
 			exit 1; \
 		fi; \
+	elif command -v bun >/dev/null 2>&1 || [ -x "$(HOME)/.bun/bin/bun" ]; then \
+		export PATH="$(HOME)/.bun/bin:$$PATH"; \
+		echo "📥 @devcontainers/cli を bun でグローバルにインストール中..."; \
+		if bun add -g @devcontainers/cli; then \
+			echo "✅ @devcontainers/cli のインストールが完了しました"; \
+		else \
+			echo "❌ @devcontainers/cli のインストールに失敗しました"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "❌ npm および bun がインストールされていません"; \
+		exit 1; \
 	fi
 
 .PHONY: install-devcontainer-cli install-packages-devcontainer-cli

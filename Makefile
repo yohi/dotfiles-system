@@ -46,7 +46,7 @@ include _mk/clipboard.mk
 include _mk/memory.mk
 include _mk/logid.mk
 
-.PHONY: all clean test test-docker-setup install setup install-system setup-system init setup-docker-cli-plugins setup-docker-config setup-docker-service
+.PHONY: all clean test test-docker-setup install setup install-system setup-system init setup-docker-cli-plugins setup-docker-config setup-docker-service install-packages-docker
 
 all: install setup ## インストールとセットアップを全て実行します
 clean: ## 一時ファイルやビルド成果物を削除します
