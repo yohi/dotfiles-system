@@ -12,6 +12,7 @@ system-install:
 	$(MAKE) install-packages-uv
 	$(MAKE) install-packages-cachix
 	$(MAKE) install-packages-arto
+	$(MAKE) install-packages-openlogi
 	@echo "✅ システムパッケージの一括インストールが完了しました。"
 
 # Homebrewのインストール
@@ -580,10 +581,10 @@ install-packages-uv:
 		echo "✅ uv は既にインストールされています"; \
 		echo "🔄 uv をアップデート中..."; \
 		if command -v brew >/dev/null 2>&1 && brew list uv >/dev/null 2>&1; then \
-			brew upgrade uv || brew link --overwrite uv || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
+			(brew upgrade uv || brew link --overwrite uv) 2>/dev/null || echo "⚠️ uv の更新に失敗しましたが、処理を続行します" >&2; \
 		else \
-			uv self update || echo "⚠️ uv の更新に失敗しました。手動で確認してください" >&2; \
-		fi; \
+			uv self update 2>/dev/null || echo "⚠️ uv の更新に失敗しましたが、処理を続行します" >&2; \
+		fi || true; \
 	elif command -v brew >/dev/null 2>&1; then \
 		echo "📦 Homebrew で uv をインストール中..."; \
 		brew install uv; \
@@ -778,7 +779,7 @@ install-packages-cachix:
 		$(call create_marker,install-packages-cachix,N/A); \
 	fi
 
-# Arto Markdown Reader のインストール（GitHub Releases から .deb パッケージをインストール）
+# Arto Markdown Reader のインストール（GitHub Release の deb パッケージ取得 + Dock ピン留め）
 install-packages-arto:
 	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-arto,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-arto)"; \
@@ -787,51 +788,143 @@ install-packages-arto:
 	fi
 
 .install-packages-arto-impl:
-	@echo "📦 Arto Markdown Reader をインストールしています..."
-	@if ! ARCH=$$(dpkg --print-architecture); then \
-		echo "❌ Debian アーキテクチャを取得できませんでした。"; \
-		exit 1; \
-	fi; \
-	case "$$ARCH" in \
-		amd64|arm64) ;; \
-		*) echo "❌ 未対応の Debian アーキテクチャです: $$ARCH"; exit 1 ;; \
-	esac; \
-	if ! command -v jq >/dev/null 2>&1; then \
-		echo "❌ jq が見つかりません。先に install-packages-apps を実行してください。"; \
-		exit 1; \
-	fi; \
-	echo "🔍 アーキテクチャ: $$ARCH"; \
-	if ! TEMP_DIR=$$(mktemp -d); then \
-		echo "❌ 一時ディレクトリを作成できませんでした。"; \
-		exit 1; \
-	fi; \
-	trap 'rm -rf "$$TEMP_DIR"' EXIT; \
-	echo "📥 最新のリリース情報を取得中..."; \
-	if [ -n "$$GITHUB_TOKEN" ]; then \
-		if ! curl -fsSL -H "Authorization: Bearer $$GITHUB_TOKEN" https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
-			echo "❌ 最新リリース情報の取得に失敗しました。"; \
-			exit 1; \
-		fi; \
+	@if [ "$$SKIP_GUI" = "1" ]; then \
+		echo "⏭️ SKIP_GUI=1 のため Arto のインストールをスキップします"; \
 	else \
-		if ! curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest -o "$$TEMP_DIR/release.json"; then \
-			echo "❌ 最新リリース情報の取得に失敗しました。"; \
-			exit 1; \
+		echo "📦 Arto Markdown Reader をインストールしています..."; \
+	@if command -v arto >/dev/null 2>&1 || [ -f /usr/bin/arto ] || [ -f /usr/local/bin/arto ]; then \
+		echo "✅ Arto は既にインストールされています"; \
+	else \
+		echo "🔍 GitHub Releases から最新の Arto (deb) のダウンロードURLを取得中..."; \
+		LATEST_RELEASE=$$(curl -fsSL https://api.github.com/repos/arto-app/Arto/releases/latest 2>/dev/null || echo ""); \
+		DEB_URL=$$(echo "$$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".deb")) | .browser_download_url' 2>/dev/null | head -n 1); \
+		if [ -n "$$DEB_URL" ] && [ "$$DEB_URL" != "null" ]; then \
+			echo "📥 ダウンロード中: $$DEB_URL"; \
+			TEMP_DEB=$$(mktemp --suffix=.deb); \
+			if curl -fsSL "$$DEB_URL" -o "$$TEMP_DEB"; then \
+				sudo DEBIAN_FRONTEND=noninteractive dpkg -i "$$TEMP_DEB" || sudo DEBIAN_FRONTEND=noninteractive apt-get install -f -y; \
+				rm -f "$$TEMP_DEB"; \
+				echo "✅ Arto のインストールが完了しました。"; \
+			else \
+				echo "❌ Arto のダウンロードに失敗しました。"; \
+				rm -f "$$TEMP_DEB"; \
+				exit 1; \
+			fi; \
+		else \
+			echo "⚠️ GitHub Release に Arto の deb ファイルが見つかりませんでした。"; \
 		fi; \
+	fi
+	@mkdir -p ~/.local/share/applications; \
+	ARTO_DESKTOP_SRC=""; \
+	if [ -f /usr/share/applications/Arto.desktop ]; then \
+		ARTO_DESKTOP_SRC=/usr/share/applications/Arto.desktop; \
+	elif [ -f /usr/share/applications/arto.desktop ]; then \
+		ARTO_DESKTOP_SRC=/usr/share/applications/arto.desktop; \
 	fi; \
-	URL=$$(jq -er --arg arch "$$ARCH" '[.assets[] | select(.state == "uploaded" and (.name | startswith("arto_")) and (.name | endswith("_\($$arch).deb"))) | .browser_download_url] | if length == 1 then .[0] else error("expected exactly one matching Arto asset") end' "$$TEMP_DIR/release.json") || { \
-		echo "❌ $$ARCH 用の .deb パッケージを一意に特定できませんでした。"; \
-		exit 1; \
-	}; \
-	echo "📥 ダウンロード中: $$URL"; \
-	if ! curl -fsSL "$$URL" -o "$$TEMP_DIR/arto.deb"; then \
-		echo "❌ ダウンロードに失敗しました。"; \
-		exit 1; \
+	if [ -n "$$ARTO_DESKTOP_SRC" ]; then \
+		cp "$$ARTO_DESKTOP_SRC" ~/.local/share/applications/arto.desktop; \
+	else \
+		echo "[Desktop Entry]" > ~/.local/share/applications/arto.desktop; \
+		echo "Categories=Utility;" >> ~/.local/share/applications/arto.desktop; \
+		echo "Comment=A GitHub Markdown viewer" >> ~/.local/share/applications/arto.desktop; \
+		echo "Exec=arto" >> ~/.local/share/applications/arto.desktop; \
+		echo "StartupWMClass=arto" >> ~/.local/share/applications/arto.desktop; \
+		echo "Icon=arto" >> ~/.local/share/applications/arto.desktop; \
+		echo "Name=Arto" >> ~/.local/share/applications/arto.desktop; \
+		echo "Terminal=false" >> ~/.local/share/applications/arto.desktop; \
+		echo "Type=Application" >> ~/.local/share/applications/arto.desktop; \
 	fi; \
-	echo "🔧 インストール中..."; \
-	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$$TEMP_DIR/arto.deb" || { echo "❌ インストールに失敗しました。"; exit 1; }; \
-	echo "✅ Arto のインストールが完了しました。"; \
-	$(call create_marker,install-packages-arto,N/A)
+	mkdir -p ~/.local/share/pixmaps; \
+	if [ -f /usr/share/icons/hicolor/500x500/apps/arto.png ]; then \
+		cp /usr/share/icons/hicolor/500x500/apps/arto.png ~/.local/share/pixmaps/arto.png 2>/dev/null || true; \
+	fi; \
+	sed -i "s|^Icon=.*|Icon=$$HOME/.local/share/pixmaps/arto.png|" ~/.local/share/applications/arto.desktop; \
+	update-desktop-database ~/.local/share/applications/ >/dev/null 2>&1 || true; \
+	if command -v gsettings >/dev/null 2>&1; then \
+		echo "📌 GNOME Dock に Arto をピン留め中..."; \
+		CURRENT_FAVS=$$(gsettings get org.gnome.shell favorite-apps 2>/dev/null || echo "[]"); \
+		if ! echo "$$CURRENT_FAVS" | grep -q "'arto.desktop'"; then \
+			NEW_FAVS=$$(python3 -c "import ast; favs = ast.literal_eval(\"$$CURRENT_FAVS\"); favs.append('arto.desktop'); print(str(favs))" 2>/dev/null || echo ""); \
+			if [ -n "$$NEW_FAVS" ]; then \
+				gsettings set org.gnome.shell favorite-apps "$$NEW_FAVS" || true; \
+			fi; \
+		fi; \
+	fi
+	@$(call create_marker,install-packages-arto,N/A)
 
+# OpenLogi のインストール（GitHub Release の deb パッケージ取得 + Dock ピン留め）
+install-packages-openlogi:
+	@if [ -z "$(FORCE)" ] && $(call check_marker,install-packages-openlogi,N/A) 2>/dev/null; then \
+		echo "$(call IDEMPOTENCY_SKIP_MSG,install-packages-openlogi)"; \
+	else \
+		$(MAKE) .install-packages-openlogi-impl; \
+	fi
+
+.install-packages-openlogi-impl:
+	@if [ "$$SKIP_GUI" = "1" ]; then \
+		echo "⏭️ SKIP_GUI=1 のため OpenLogi のインストールをスキップします"; \
+	else \
+		echo "📦 OpenLogi をインストールしています..."; \
+		if command -v openlogi >/dev/null 2>&1 || [ -f /usr/bin/openlogi ] || [ -f /usr/local/bin/openlogi ]; then \
+			echo "✅ OpenLogi は既にインストールされています"; \
+		else \
+			echo "🔍 GitHub Releases から最新の OpenLogi (deb) のダウンロードURLを取得中..."; \
+			LATEST_RELEASE=$$(curl -fsSL https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
+			DEB_URL=$$(echo "$$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".deb")) | .browser_download_url' 2>/dev/null | head -n 1); \
+			if [ -n "$$DEB_URL" ] && [ "$$DEB_URL" != "null" ]; then \
+				echo "📥 ダウンロード中: $$DEB_URL"; \
+				TEMP_DEB=$$(mktemp --suffix=.deb); \
+				if curl -fsSL "$$DEB_URL" -o "$$TEMP_DEB"; then \
+					sudo DEBIAN_FRONTEND=noninteractive dpkg -i "$$TEMP_DEB" || sudo DEBIAN_FRONTEND=noninteractive apt-get install -f -y; \
+					rm -f "$$TEMP_DEB"; \
+					echo "✅ OpenLogi のインストールが完了しました。"; \
+				else \
+					echo "❌ OpenLogi のダウンロードに失敗しました。"; \
+					rm -f "$$TEMP_DEB"; \
+					exit 1; \
+				fi; \
+			else \
+				echo "⚠️ GitHub Release に OpenLogi の deb ファイルが見つかりませんでした。"; \
+			fi; \
+		fi; \
+		mkdir -p ~/.local/share/applications; \
+		OPENLOGI_DESKTOP_SRC=""; \
+		if [ -f /usr/share/applications/OpenLogi.desktop ]; then \
+			OPENLOGI_DESKTOP_SRC=/usr/share/applications/OpenLogi.desktop; \
+		elif [ -f /usr/share/applications/openlogi.desktop ]; then \
+			OPENLOGI_DESKTOP_SRC=/usr/share/applications/openlogi.desktop; \
+		fi; \
+		if [ -n "$$OPENLOGI_DESKTOP_SRC" ]; then \
+			cp "$$OPENLOGI_DESKTOP_SRC" ~/.local/share/applications/openlogi.desktop; \
+		else \
+			echo "[Desktop Entry]" > ~/.local/share/applications/openlogi.desktop; \
+			echo "Categories=Utility;" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Comment=Logitech Device Manager" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Exec=openlogi" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "StartupWMClass=openlogi" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Icon=openlogi" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Name=OpenLogi" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Terminal=false" >> ~/.local/share/applications/openlogi.desktop; \
+			echo "Type=Application" >> ~/.local/share/applications/openlogi.desktop; \
+		fi; \
+		mkdir -p ~/.local/share/pixmaps; \
+		if [ -f /usr/share/icons/hicolor/1024x1024/apps/openlogi.png ]; then \
+			cp /usr/share/icons/hicolor/1024x1024/apps/openlogi.png ~/.local/share/pixmaps/openlogi.png 2>/dev/null || true; \
+		fi; \
+		sed -i "s|^Icon=.*|Icon=$$HOME/.local/share/pixmaps/openlogi.png|" ~/.local/share/applications/openlogi.desktop; \
+		update-desktop-database ~/.local/share/applications/ >/dev/null 2>&1 || true; \
+		if command -v gsettings >/dev/null 2>&1; then \
+			echo "📌 GNOME Dock に OpenLogi をピン留め中..."; \
+			CURRENT_FAVS=$$(gsettings get org.gnome.shell favorite-apps 2>/dev/null || echo "[]"); \
+			if ! echo "$$CURRENT_FAVS" | grep -q "'openlogi.desktop'"; then \
+				NEW_FAVS=$$(python3 -c "import ast; favs = ast.literal_eval(\"$$CURRENT_FAVS\"); favs.append('openlogi.desktop'); print(str(favs))" 2>/dev/null || echo ""); \
+				if [ -n "$$NEW_FAVS" ]; then \
+					gsettings set org.gnome.shell favorite-apps "$$NEW_FAVS" || true; \
+				fi; \
+			fi; \
+		fi; \
+	fi
+	@$(call create_marker,install-packages-openlogi,N/A)
 
 # システムのシャットダウン
 shutdown-system:
