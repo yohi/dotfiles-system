@@ -3,6 +3,7 @@ system-setup:
 	@$(MAKE) setup-docker-cli-plugins || echo "⚠️  Docker CLIプラグイン設定に失敗しましたが、処理を続行します"
 	@$(MAKE) setup-docker-config || echo "⚠️  Docker設定に失敗しましたが、処理を続行します"
 	@$(MAKE) setup-docker-service || echo "⚠️  Dockerサービスの有効化・起動に失敗しましたが、処理を続行します"
+	@$(MAKE) setup-zram-auto || echo "⚠️  zramセットアップのチェックに失敗しましたが、処理を続行します"
 	@if [ -z "$(FORCE)" ] && $(call check_marker,setup-system,N/A) 2>/dev/null; then \
 		echo "$(call IDEMPOTENCY_SKIP_MSG,setup-system)"; \
 	else \

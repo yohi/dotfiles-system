@@ -4,7 +4,7 @@
 # Note: This module is Linux-specific and uses GNU sed.
 # It modifies /etc/sysctl.conf and other Linux system files.
 
-.PHONY: memory-check memory-cleanup memory-monitor memory-optimize memory-troubleshoot memory-fix memory-info help-memory memory-troubleshoot memory-fix memory-info help-memory
+.PHONY: memory-check memory-cleanup memory-monitor memory-optimize memory-troubleshoot memory-fix memory-info help-memory setup-zram setup-zram-auto
 
 # メモリ使用状況の確認
 memory-check:
@@ -181,6 +181,57 @@ memory-info:
 	@echo "- Monitor Cursor/Chrome memory usage regularly"
 	@echo "- Use 'make memory-monitor' for real-time monitoring"
 	@echo "- Run 'make memory-cleanup' weekly"
+
+# zram (RAM内圧縮スワップ) のセットアップ（単独・明示的実行用）
+setup-zram:
+	@echo "🚀 zram (RAM内圧縮スワップ) のセットアップを開始..."
+	@if [ "$$(uname -s)" != "Linux" ]; then \
+		echo "⚠️  zram は Linux 環境でのみサポートされています。"; \
+		exit 0; \
+	fi
+	@if ! command -v apt >/dev/null 2>&1; then \
+		echo "⚠️  apt パッケージマネージャーが見つかりません。手動でインストールしてください。"; \
+		exit 1; \
+	fi
+	@if swapon --show | grep -q "zram"; then \
+		echo "✅ zram は既に有効化されています:"; \
+		swapon --show | grep "zram"; \
+	else \
+		echo "📦 zram-tools をインストール中..."; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get update -q && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y zram-tools; \
+		echo "⚙️  /etc/default/zramswap を設定中 (ALGO=zstd, PERCENT=25, PRIORITY=100)..."; \
+		printf "ALGO=zstd\nPERCENT=25\nPRIORITY=100\n" | sudo tee /etc/default/zramswap > /dev/null; \
+		echo "🔄 zramswap サービスを再起動中..."; \
+		sudo systemctl restart zramswap; \
+		echo "✅ zram の有効化が完了しました:"; \
+		swapon --show; \
+	fi
+
+# ハイスペックPC要件チェック付き自動実行（make setup/all から呼ばれる）
+setup-zram-auto:
+	@if [ "$$(uname -s)" = "Linux" ]; then \
+		TOTAL_MEM_MB=$$(free -m 2>/dev/null | awk '/^Mem:/ {print $$2}' || echo 0); \
+		TOTAL_MEM_GB=$$((TOTAL_MEM_MB / 1024)); \
+		CPU_CORES=$$(nproc 2>/dev/null || echo 1); \
+		echo ""; \
+		echo "============================================================"; \
+		echo "🧠 メモリ最適化 (zram) 要件チェック"; \
+		echo "============================================================"; \
+		if swapon --show 2>/dev/null | grep -q "zram"; then \
+			echo "✅ zram は既に有効化されています ($$(swapon --show | grep 'zram' | awk '{print $$1, $$3}'))"; \
+		elif [ "$$TOTAL_MEM_MB" -ge 32000 ] && [ "$$CPU_CORES" -ge 4 ]; then \
+			echo "💡 検出スペック: RAM $${TOTAL_MEM_GB} GiB / CPU $${CPU_CORES} コア (要件: 32 GiB 以上 & 4 コア以上)"; \
+			echo "⚡ 高スペック環境を検出したため、SSD保護と高速化のために zram をセットアップします..."; \
+			$(MAKE) setup-zram; \
+		else \
+			echo "⏭️  検出スペック: RAM $${TOTAL_MEM_GB} GiB / CPU $${CPU_CORES} コア"; \
+			echo "   (要件: RAM 32 GiB 以上 かつ CPU 4 コア以上 を満たさないため、自動セットアップをスキップします)"; \
+			echo "ℹ️  手動で zram を有効化したい場合は 'make setup-zram' を実行してください"; \
+		fi; \
+		echo "============================================================"; \
+		echo ""; \
+	fi
+
 
 help-memory:
 	@echo "🧠 Memory Management Commands"
