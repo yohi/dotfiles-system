@@ -95,15 +95,28 @@ setting_paths() {
 }
 
 save_original_settings() {
-    local path
+    local path value temporary
     [ -s "$STATE_FILE" ] && return 0
     umask 077
     mkdir -p "$STATE_DIR"
-    : > "$STATE_FILE"
+    temporary=$(mktemp "$STATE_DIR/.original-settings.XXXXXX") || return 1
     while IFS= read -r path; do
-        printf '%s\t%s\n' "$path" "$(< "$path")" >> "$STATE_FILE"
+        if ! IFS= read -r value < "$path"; then
+            echo "❌ 元の設定を読み取れません: $path" >&2
+            unlink "$temporary"
+            return 1
+        fi
+        if ! printf '%s\t%s\n' "$path" "$value" >> "$temporary"; then
+            echo "❌ 一時状態ファイルへ書き込めません" >&2
+            unlink "$temporary"
+            return 1
+        fi
     done < <(setting_paths)
-    [ -s "$STATE_FILE" ]
+    if [ ! -s "$temporary" ] || ! mv -f -- "$temporary" "$STATE_FILE"; then
+        echo '❌ 元の設定を完全な状態で保存できません' >&2
+        unlink "$temporary"
+        return 1
+    fi
 }
 
 restore_settings() {
@@ -154,7 +167,7 @@ apply_profile() {
         echo '❌ この電力プロファイルは Core Ultra 7 270K Plus 専用です' >&2
         return 1
     fi
-    local file failed=0
+    local file governor failed=0
     for file in "$CPU_SYSFS/cpu0/cpufreq/energy_performance_preference" \
         "$CPU_SYSFS/intel_pstate/max_perf_pct" \
         "$CPU_SYSFS/intel_pstate/no_turbo" \
@@ -179,6 +192,16 @@ apply_profile() {
     # 1. EPP (Energy Performance Preference) の設定
     for file in "$CPU_SYSFS"/cpu*/cpufreq/energy_performance_preference; do
         [ -f "$file" ] || continue
+        governor="${file%/energy_performance_preference}/scaling_governor"
+        if [ ! -r "$governor" ]; then
+            echo "⚠️  governor を確認できないため EPP を変更しません: $governor" >&2
+            failed=1
+            continue
+        fi
+        if [ "$(< "$governor")" = performance ]; then
+            echo "⏭️  $governor が performance のため EPP を変更しません。対応する governor に手動で切り替えてから再実行してください。" >&2
+            continue
+        fi
         write_setting "$file" "$TARGET_EPP" || failed=1
     done
 
@@ -219,9 +242,15 @@ case "$MODE" in
         echo '⏭️  自動適用は無効です。make cpu-power-agent で明示的に適用してください。'
         ;;
     restore)
+        mkdir -p "$STATE_DIR"
+        exec {lock_fd}> "$STATE_DIR/lock"
+        flock -x "$lock_fd"
         restore_settings
         ;;
     agent|quiet)
+        mkdir -p "$STATE_DIR"
+        exec {lock_fd}> "$STATE_DIR/lock"
+        flock -x "$lock_fd"
         apply_profile "$MODE"
         ;;
     *)

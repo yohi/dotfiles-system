@@ -10,6 +10,8 @@ RAPL="$SYSFS/class/powercap/intel-rapl/intel-rapl:0"
 mkdir -p "$CPU/cpu0/cpufreq" "$CPU/cpu1/cpufreq" "$CPU/intel_pstate" "$RAPL" "$STATE"
 printf '%s\n' balance_performance > "$CPU/cpu0/cpufreq/energy_performance_preference"
 printf '%s\n' performance > "$CPU/cpu1/cpufreq/energy_performance_preference"
+printf '%s\n' schedutil > "$CPU/cpu0/cpufreq/scaling_governor"
+printf '%s\n' performance > "$CPU/cpu1/cpufreq/scaling_governor"
 printf '%s\n' 100 > "$CPU/intel_pstate/max_perf_pct"
 printf '%s\n' 0 > "$CPU/intel_pstate/no_turbo"
 printf '%s\n' 125000000 > "$RAPL/constraint_0_power_limit_uw"
@@ -45,6 +47,10 @@ run_profile auto
 run_profile agent
 [[ $(< "$CPU/intel_pstate/max_perf_pct") == 80 ]]
 [[ $(< "$RAPL/constraint_1_power_limit_uw") == 150000000 ]]
+[[ $(< "$CPU/cpu0/cpufreq/energy_performance_preference") == balance_power ]]
+[[ $(< "$CPU/cpu1/cpufreq/energy_performance_preference") == performance ]]
+[[ -f "$STATE/lock" ]]
+[[ $(wc -l < "$STATE/original-settings") -eq 6 ]]
 
 run_profile quiet
 run_profile restore

@@ -198,13 +198,19 @@ setup-zram:
 		swapon --show | grep "zram"; \
 	else \
 		echo "📦 zram-tools をインストール中..."; \
-		sudo DEBIAN_FRONTEND=noninteractive apt-get update -q && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y zram-tools; \
+		set -e; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get update -q; \
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y zram-tools; \
 		echo "⚙️  /etc/default/zramswap を設定中 (ALGO=zstd, PERCENT=25, PRIORITY=100)..."; \
 		printf "ALGO=zstd\nPERCENT=25\nPRIORITY=100\n" | sudo tee /etc/default/zramswap > /dev/null; \
 		echo "🔄 zramswap サービスを再起動中..."; \
 		sudo systemctl restart zramswap; \
+		if ! swapon --show | grep -q "zram"; then \
+			echo "❌ zram が有効化されていることを確認できません" >&2; \
+			exit 1; \
+		fi; \
 		echo "✅ zram の有効化が完了しました:"; \
-		swapon --show; \
+		swapon --show | grep "zram"; \
 	fi
 
 # ハイスペックPC要件チェック付き自動実行（make setup/all から呼ばれる）
@@ -219,10 +225,10 @@ setup-zram-auto:
 		echo "============================================================"; \
 		if swapon --show 2>/dev/null | grep -q "zram"; then \
 			echo "✅ zram は既に有効化されています ($$(swapon --show | grep 'zram' | awk '{print $$1, $$3}'))"; \
-		elif [ "$$TOTAL_MEM_MB" -ge 32000 ] && [ "$$CPU_CORES" -ge 4 ]; then \
+		elif [ "$$TOTAL_MEM_MB" -ge 32768 ] && [ "$$CPU_CORES" -ge 4 ]; then \
 			echo "💡 検出スペック: RAM $${TOTAL_MEM_GB} GiB / CPU $${CPU_CORES} コア (要件: 32 GiB 以上 & 4 コア以上)"; \
 			echo "⚡ 高スペック環境を検出したため、SSD保護と高速化のために zram をセットアップします..."; \
-			$(MAKE) setup-zram; \
+			$(MAKE) setup-zram || { status=$$?; exit $$status; }; \
 		else \
 			echo "⏭️  検出スペック: RAM $${TOTAL_MEM_GB} GiB / CPU $${CPU_CORES} コア"; \
 			echo "   (要件: RAM 32 GiB 以上 かつ CPU 4 コア以上 を満たさないため、自動セットアップをスキップします)"; \
