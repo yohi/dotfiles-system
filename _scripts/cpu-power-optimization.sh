@@ -187,21 +187,23 @@ apply_profile() {
         echo '❌ 対応する CPU 電力制御インターフェースがありません' >&2
         return 1
     fi
+    for file in "$CPU_SYSFS"/cpu*/cpufreq/energy_performance_preference; do
+        [ -f "$file" ] || continue
+        governor="${file%/energy_performance_preference}/scaling_governor"
+        if [ ! -r "$governor" ]; then
+            echo "❌ governor を確認できないため、設定を適用できません: $governor" >&2
+            return 1
+        fi
+        if [ "$(< "$governor")" = performance ]; then
+            echo "❌ $governor が performance のため、設定を適用できません。利用可能な governor を確認し、EPP に対応する governor へ手動で切り替えてから再実行してください。" >&2
+            return 1
+        fi
+    done
     save_original_settings || return 1
 
     # 1. EPP (Energy Performance Preference) の設定
     for file in "$CPU_SYSFS"/cpu*/cpufreq/energy_performance_preference; do
         [ -f "$file" ] || continue
-        governor="${file%/energy_performance_preference}/scaling_governor"
-        if [ ! -r "$governor" ]; then
-            echo "⚠️  governor を確認できないため EPP を変更しません: $governor" >&2
-            failed=1
-            continue
-        fi
-        if [ "$(< "$governor")" = performance ]; then
-            echo "⏭️  $governor が performance のため EPP を変更しません。対応する governor に手動で切り替えてから再実行してください。" >&2
-            continue
-        fi
         write_setting "$file" "$TARGET_EPP" || failed=1
     done
 

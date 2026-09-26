@@ -44,11 +44,25 @@ run_profile auto
 [[ $(< "$CPU/intel_pstate/max_perf_pct") == 100 ]]
 [[ $(< "$RAPL/constraint_1_power_limit_uw") == 250000000 ]]
 
+if run_profile agent 2>"$TEMP_ROOT/profile-error"; then
+    printf 'agent profile must fail when a CPU uses the performance governor\n' >&2
+    exit 1
+fi
+[[ $(< "$CPU/intel_pstate/max_perf_pct") == 100 ]]
+[[ $(< "$CPU/intel_pstate/no_turbo") == 0 ]]
+[[ $(< "$RAPL/constraint_0_power_limit_uw") == 125000000 ]]
+[[ $(< "$RAPL/constraint_1_power_limit_uw") == 250000000 ]]
+[[ $(< "$CPU/cpu0/cpufreq/energy_performance_preference") == balance_performance ]]
+[[ $(< "$CPU/cpu1/cpufreq/energy_performance_preference") == performance ]]
+[[ ! -s "$STATE/original-settings" ]]
+[[ "$(< "$TEMP_ROOT/profile-error")" == *'performance'* ]]
+
+printf '%s\n' schedutil > "$CPU/cpu1/cpufreq/scaling_governor"
 run_profile agent
 [[ $(< "$CPU/intel_pstate/max_perf_pct") == 80 ]]
 [[ $(< "$RAPL/constraint_1_power_limit_uw") == 150000000 ]]
 [[ $(< "$CPU/cpu0/cpufreq/energy_performance_preference") == balance_power ]]
-[[ $(< "$CPU/cpu1/cpufreq/energy_performance_preference") == performance ]]
+[[ $(< "$CPU/cpu1/cpufreq/energy_performance_preference") == balance_power ]]
 [[ -f "$STATE/lock" ]]
 [[ $(wc -l < "$STATE/original-settings") -eq 6 ]]
 
