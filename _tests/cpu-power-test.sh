@@ -20,6 +20,7 @@ printf '%s\n' package-0 > "$RAPL/name"
 
 run_profile() {
     CPU_POWER_SYSFS_ROOT="$SYSFS" CPU_POWER_STATE_DIR="$STATE" \
+        CPU_POWER_CPU_MODEL='Intel(R) Core(TM) Ultra 7 270K Plus' \
         bash "$SCRIPT_DIR/_scripts/cpu-power-optimization.sh" "$1" >/dev/null
 }
 
