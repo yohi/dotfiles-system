@@ -439,3 +439,24 @@ install-packages-cica-fonts:
 	else \
 	echo "✅ Cica フォントは既に十分にインストールされています ($$EXISTING_FONTS 個)"; \
 	fi
+
+# CPU電力・静音最適化
+.PHONY: cpu-power-status cpu-power-agent cpu-power-quiet cpu-power-restore cpu-power-agent-hint test-cpu-power
+
+cpu-power-status: ## CPU電力・周波数・温度のステータスを確認
+	@bash _scripts/cpu-power-optimization.sh status
+
+cpu-power-agent: ## AIエージェント並列特化モード（バランス省電力・静音）を適用
+	@bash _scripts/cpu-power-optimization.sh agent
+
+cpu-power-quiet: ## 極限静音モードを適用
+	@bash _scripts/cpu-power-optimization.sh quiet
+
+cpu-power-restore: ## 適用前に保存した電力設定へ戻す
+	@bash _scripts/cpu-power-optimization.sh restore
+
+cpu-power-agent-hint:
+	@bash _scripts/cpu-power-optimization.sh hint
+
+test-cpu-power: ## CPU電力プロファイルの回帰テスト
+	@bash _tests/cpu-power-test.sh
