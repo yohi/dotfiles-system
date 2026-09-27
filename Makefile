@@ -73,3 +73,4 @@ install-system: prepare-system
 setup-system: prepare-system
 	@echo "==> Setting up dotfiles-system"
 	$(MAKE) system-setup
+	$(MAKE) --no-print-directory cpu-power-agent-hint
