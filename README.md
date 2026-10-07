@@ -35,6 +35,29 @@
 - **クリップボード統合**: システムクリップボードの共有設定。
 - **システム監視**: カスタム監視スクリプト。
 
+## Tailscale の Wi-Fi ルーティング
+
+Linux で Tailscale 自身の外向き通信（control plane / DERP / peer transport）を Wi-Fi へ優先的に流す設定を用意しています。
+
+```bash
+make setup-tailscale-wifi-routing TAILSCALE_WIFI_IFACE=wlo1
+```
+
+この設定は Tailscale が Linux で利用する `fwmark 0x80000/0xff0000` を専用ルーティングテーブルへ送ります。ただし、過去の設定のような `unreachable` kill-switch は作りません。Wi-Fi の経路を完成・検証してから policy rule を有効化し、Wi-Fi が切断された場合はカスタム rule を撤去して Tailscale 標準ルーティングへ安全にフォールバックします。
+
+状態確認と撤去:
+
+```bash
+make tailscale-wifi-routing-status
+make remove-tailscale-wifi-routing
+```
+
+回帰テスト:
+
+```bash
+make test-tailscale-wifi-routing
+```
+
 ## 関連ドキュメント
 
 - [UEFIの電力・ファン設定の推奨値](_docs/bios-power-and-fan-settings.ja.md)
