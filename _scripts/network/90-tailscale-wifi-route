@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+CONFIG_FILE="${TAILSCALE_WIFI_CONFIG:-/etc/default/tailscale-wifi-routing}"
+if [ -r "$CONFIG_FILE" ]; then
+    # shellcheck disable=SC1090
+    . "$CONFIG_FILE"
+fi
+
+WIFI_IFACE="${WIFI_IFACE:-wlo1}"
+HELPER="/usr/local/sbin/tailscale-wifi-route"
+
+[ "$1" = "$WIFI_IFACE" ] || exit 0
+[ -x "$HELPER" ] || exit 0
+
+case "$2" in
+    up|dhcp4-change|reapply)
+        "$HELPER" apply
+        ;;
+    pre-down|down)
+        "$HELPER" remove
+        ;;
+esac

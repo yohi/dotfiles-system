@@ -44,6 +44,7 @@ include _mk/install.mk
 include _mk/fonts.mk
 include _mk/clipboard.mk
 include _mk/memory.mk
+include _mk/tailscale.mk
 include _mk/logid.mk
 
 .PHONY: all clean test test-docker-setup install setup install-system setup-system init setup-docker-cli-plugins setup-docker-config setup-docker-service
@@ -51,7 +52,7 @@ include _mk/logid.mk
 all: install setup ## インストールとセットアップを全て実行します
 clean: ## 一時ファイルやビルド成果物を削除します
 	@$(MAKE) logid-clean
-test: test-docker-setup ## 設定のテストを実行します
+test: test-docker-setup test-tailscale-wifi-routing ## 設定のテストを実行します
 
 test-docker-setup: ## Dockerセットアップの回帰テストを実行します
 	@bash _tests/docker-setup-test.sh
