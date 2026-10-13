@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Ubuntu Desktop: on-demand localhost OAuth callback forwarding for an existing Herdr session.
+set -euo pipefail
+
+usage() {
+  cat <<'HELP'
+Usage: herdr-oauth-forward --port PORT SSH_ALIAS
+
+Run in a separate Ubuntu Desktop terminal, without restarting herdr --remote.
+The requested Desktop loopback port is forwarded to the same port on the
+remote AI-agent host. Exit with Ctrl+C after login.
+
+Prefer device-code authentication when supported. Ctrl-click login URLs in
+Herdr to open them with the local Desktop browser.
+HELP
+}
+die() { printf 'herdr-oauth-forward: %s\n' "$*" >&2; exit 2; }
+
+port="" target=""
+while (($#)); do
+  case "$1" in
+    --port)
+      (($# >= 2)) || die '--port needs a value'
+      port="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    -*) die "unknown option: $1" ;;
+    *) [[ -z "$target" ]] || die 'expected exactly one SSH alias'
+       target="$1"; shift ;;
+  esac
+done
+[[ "$target" =~ ^[a-zA-Z0-9._@-]+$ && "$target" != -* ]] ||
+  die 'provide an SSH config alias or user@host (not ssh:// or SSH options)'
+[[ "$port" =~ ^[0-9]{1,5}$ ]] || die 'port must be 1-65535'
+number=$((10#$port))
+((number >= 1 && number <= 65535)) || die 'port must be 1-65535'
+command -v ssh >/dev/null 2>&1 || die 'ssh is required'
+
+printf 'Desktop 127.0.0.1:%s -> %s 127.0.0.1:%s\n' "$number" "$target" "$number"
+printf 'Leave this SSH tunnel running during OAuth. Press Ctrl+C when done.\n'
+# -S none avoids borrowing a Herdr or user SSH master connection: Ctrl+C
+# reliably tears down this forward without disturbing the existing TUI.
+exec ssh -N -T -S none \
+  -o ControlMaster=no -o ControlPersist=no \
+  -o ExitOnForwardFailure=yes -o ForwardAgent=no \
+  -L "127.0.0.1:${number}:127.0.0.1:${number}" \
+  -- "$target"
