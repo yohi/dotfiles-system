@@ -1,44 +1,77 @@
-# Ubuntu Desktop / Server — Herdr remote OAuth
+# Herdr --remote のブラウザ OAuth（Ubuntu Desktop / Ubuntu Server）
 
-## 原則
+## 設計判断（2026-10-13）
 
-Ubuntu Desktop で `herdr --remote workbox` を実行している場合、Herdr UI とブラウザは Desktop 側にあります。接続先 `workbox` は Desktop の SSH config に登録済みのエイリアスです。Server のIPアドレスやSSH接続元IPからDesktopを推測しません。
+従来の `herdr --remote workbox` を変更しない。ここで `workbox` は Ubuntu Desktop 側のSSH configで定義した接続先であり、DesktopのIPアドレスを推測する必要はない。Herdrは `--remote` の場合でもUIをDesktop側で描画し、ペイン内のHTTPSリンクをCtrl+クリックすると、Desktop側の既定ブラウザで開ける（端末が修飾クリックを渡す場合）。
 
-認証方法は次の優先順位を推奨します。
+**Ctrl+クリックは自動起動ではない。** 任意のURLをペイン出力から抽出して勝手に開く監視デーモンは採用しない。URL、OAuthコード、PKCE情報、トークンはログ収集やGit管理へ送らない。
 
-1. 認証ツールが Device Authorization Flow を提供するならそれを使用（localhost コールバック転送不要）。
-2. それ以外は Herdr のペインに表示された認証URLを **Ctrl+クリック** し、Desktop 側のブラウザで開く（使用する端末が修飾クリックをHerdrに渡す必要があります）。
-3. リダイレクトURIが **Serverの localhost コールバック** を指している場合のみ、下記のSSH転送を利用。
+## プロバイダ別の判断
 
-ターミナル出力を監視して発見したURLを無条件にブラウザ起動する常駐サービスは導入しません。AIエージェントの出力は信頼できない場合があるため、OAuth URLを開く操作は人間が行います。
+| ケース | 例 | 推奨 | localhost転送 |
+|---|---|---|---|
+| Device Authorization | Codex `codex login --device-auth`（ChatGPT設定で有効化が必要） | URLをDesktopで開き表示コードを入力 | 不要 |
+| ブラウザ認証後にコードを貼る方式 | 対応するCLI/provider | Ctrl+クリック、必要なコードをCLIへ入力 | 不要 |
+| 固定loopback OAuth | Codex標準認証では通常 `127.0.0.1:1455` | ログインの前後に一時転送 | 必要 |
+| 動的loopback OAuth | Gemini CLI は空きポートを使用する場合あり | 実際に表示されたredirect URIのポートで転送 | 必要 |
 
-## 一時的な localhost SSH 転送
+OpenCodeの `/connect`、`opencode auth login`、`opencode mcp auth` はプロバイダ・バージョンごとに認証方式が異なる。全OpenCode認証に共通するポートは仮定しない。Claude Codeも利用バージョンと認証方式を確認する。「ブラウザを開いてください」という表示だけでは転送の要否は確定できない。
 
-Desktop 側のターミナルで、利用するOAuthツールが実際に表示した待受ポートを指定して実行します。
+## 普段の操作：変更なし
 
-```bash
-# 例示の1455はOAuthツールによって異なります
-_bin/herdr-oauth-remote --port 1455 workbox
-
-# Herdrの名前付きセッション
-_bin/herdr-oauth-remote --port 1455 --session agents workbox
-```
-
-このコマンドはDesktopの `127.0.0.1:PORT` をServerの `127.0.0.1:PORT` にSSH転送し、その後 `herdr --remote` を起動します。OAuth CLIがServerで起動したコールバック待受に対し、Desktopブラウザから接続できます。終了時に専用SSHトンネルを閉じます。Server側HerdrセッションやAIエージェントは停止しません。
-
-**制限:** OAuthリダイレクトが `[::1]` (IPv6) 専用の場合、このIPv4ヘルパーだけでは動作しません。ブラウザ側でlocalhostをIPv4解決できる必要があります。端末のポートが競合している場合はSSH転送を失敗させ、別のOAuth redirect URIに勝手に変更しません。
-
-## セキュリティと保守
-
-- ローカル `127.0.0.1` のみにbind。LANへの待受公開、デスクトップへの新規SSHサービス、資格情報のコピーは不要です。
-- 標準のSSHホスト鍵検証を維持。SSHエージェント転送は無効にします。
-- トンネルは必要時だけ有効にし、接続確立に失敗した場合はHerdrを起動しません。
-- `BROWSER` のグローバル書換え、任意URLの自動起動、systemdによる常駐監視はしません。
-- `herdr --remote` のSSH接続と補助トンネルは別接続です。
-- 本コンポーネントは dotfiles-core から管理されます。リポジトリ単独のセットアップはサポートされません。
+Ubuntu Desktopでこれまでどおり：
 
 ```bash
-bash _tests/herdr-oauth-remote-test.sh
+herdr --remote workbox
 ```
 
-参考: [Herdr remote](https://herdr.dev/docs/how-to-work/), [Herdr quick start](https://herdr.dev/docs/quick-start/), [Herdr persistence](https://herdr.dev/docs/persistence-remote/)
+CodexでDevice Codeログインを選べる場合、Server上のHerdrペインから：
+
+```bash
+codex login --device-auth
+```
+
+表示されたURLをCtrl+クリックしてDesktopのブラウザでログイン、コードを入力する。SSHポート転送は不要。
+
+## localhostコールバックが必要な例外だけ
+
+**Herdrを再起動せず**、Desktopで別のターミナルを開き、ServerのOAuth CLIが待ち受けるポートで次を起動する：
+
+```bash
+_bin/herdr-oauth-forward --port 1455 workbox
+```
+
+この補助コマンドは別SSH接続による `Desktop 127.0.0.1:1455 → Server 127.0.0.1:1455` だけを作る。Herdr自体は起動・終了しない。認証URLをHerdrでCtrl+クリックし、ログイン後に別ターミナルでCtrl+Cを押す。SSHトンネルだけが終了し、Herdrのセッションは継続する。
+
+`1455` はCodexの通常ポートの例。Gemini CLI等の動的ポート、別のプロバイダの場合は、実際のOAuth redirect URIに合わせて指定する。ローカルポート競合・異なる待受アドレス・IPv6 `::1` 専用待受なら成功しないため、無断でポートを変更しない。補助コマンドはIPv4 loopback専用。
+
+### なぜSSH設定にLocalForwardを常設しないか
+
+OpenSSHの `LocalForward 127.0.0.1:1455 127.0.0.1:1455` をDesktopの対象Hostに書けば、既知の固定ポートの転送を透過的に設定できる可能性はある。ただし、そのHostへの別のSSH接続にも効き、多重接続時のポート競合やHerdr固有のSSH接続再利用との兼ね合いがある。今回の環境での実測はなく、`make setup` がユーザーのSSH設定を自動変更する方式は採用しない。固定ポートの常時転送が必要な場合に個別検討する。
+
+## 自動ブラウザ起動の設計上の境界
+
+Herdrの公開ドキュメントと該当ソースには、利用者のCtrl+クリックに応じて **DesktopでURLを開く** 挙動がある。一方、信頼できる構造化OAuth開始イベントをリモートエージェントからDesktopへ送り、URL/redirect URIを確認して無条件に自動ブラウザ起動・動的ポート転送を完結する正式な統合APIは今回確認できていない。完全自動化を要求する場合は、Herdr本体または各CLIが安全な通知・明示承認・期限付き転送・失敗処理を備える拡張が必要。任意URL文字列の監視では代替しない。
+
+## テストとマージ条件
+
+```bash
+bash _tests/herdr-oauth-forward-test.sh
+```
+
+モックSSHで引数検証、loopback制限、SSH失敗伝播をテストする。ただし **実SSH、Ubuntu Desktopブラウザ、Ubuntu Server上の実OAuthは未検証**。マージ前に以下を確認すること：
+
+1. HerdrのペインからCtrl+クリックでDesktopのブラウザが開く
+2. Device Codeの認証は転送なしで完了する
+3. localhost認証は一時SSH転送で完了する（固定ポートと必要に応じ動的ポート）
+4. Ctrl+C後に転送が止まり、Herdrとリモートエージェントが動作し続ける
+5. ポート競合・SSH障害時にServerが停止せず、資格情報も漏洩しない
+
+## 一次情報
+
+- [Herdr — Persistence and remote access](https://herdr.dev/docs/persistence-remote/)
+- [Herdr — Quick start（Ctrl-click）](https://herdr.dev/docs/quick-start/)
+- [Herdr — Configuration（remote SSH）](https://herdr.dev/docs/configuration/)
+- [OpenAI Codex — Authentication / Login on headless devices](https://developers.openai.com/codex/auth)
+- [Gemini CLI OAuth実装](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts)
+- [OpenCode MCP OAuth](https://docs.opencode.ai/docs/mcp-servers/)
