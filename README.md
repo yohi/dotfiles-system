@@ -35,6 +35,10 @@
 - **クリップボード統合**: システムクリップボードの共有設定。
 - **システム監視**: カスタム監視スクリプト。
 
+## Herdr remote OAuth
+
+Ubuntu DesktopのブラウザでUbuntu Server上のAIエージェントを認証する方法は [Herdr remote OAuth ガイド](_docs/herdr-remote-oauth.ja.md) を参照してください。
+
 ## 関連ドキュメント
 
 - [UEFIの電力・ファン設定の推奨値](_docs/bios-power-and-fan-settings.ja.md)
