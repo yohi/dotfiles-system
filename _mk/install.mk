@@ -887,12 +887,14 @@ install-packages-openlogi:
 				aarch64|arm64) TARGET_ARCH="arm64" ;; \
 				*) TARGET_ARCH="amd64" ;; \
 			esac; \
-			AUTH_HEADER=(); \
-			[ -n "$$GITHUB_TOKEN" ] && AUTH_HEADER=(-H "Authorization: token $$GITHUB_TOKEN"); \
-			LATEST_RELEASE=$$(curl -fsSL "$${AUTH_HEADER[@]}" https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
-			DEB_URL=$$(echo "$$LATEST_RELEASE" | jq -r --arg arch "$$TARGET_ARCH" '[.assets[] | select(.name | test("linux-" + $$arch + "\\.deb$$"))][0].browser_download_url // empty' 2>/dev/null); \
+			if [ -n "$$GITHUB_TOKEN" ]; then \
+				LATEST_RELEASE=$$(curl -fsSL -H "Authorization: token $$GITHUB_TOKEN" https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
+			else \
+				LATEST_RELEASE=$$(curl -fsSL https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
+			fi; \
+			DEB_URL=$$(printf "%s" "$$LATEST_RELEASE" | jq -r --arg arch "$$TARGET_ARCH" '[.assets[] | select(.name | test("linux-" + $$arch + "\\.deb$$"))][0].browser_download_url // empty' 2>/dev/null); \
 			if [ -z "$$DEB_URL" ]; then \
-				LATEST_TAG=$$(echo "$$LATEST_RELEASE" | jq -r '.tag_name // empty' 2>/dev/null); \
+				LATEST_TAG=$$(printf "%s" "$$LATEST_RELEASE" | jq -r '.tag_name // empty' 2>/dev/null); \
 				if [ -n "$$LATEST_TAG" ]; then \
 					DEB_URL="https://github.com/AprilNEA/OpenLogi/releases/download/$${LATEST_TAG}/openlogi-$${LATEST_TAG}-linux-$${TARGET_ARCH}.deb"; \
 				fi; \
