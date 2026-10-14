@@ -603,6 +603,18 @@ install-packages-uv:
 .PHONY: install-uv install-packages-uv
 install-uv: install-packages-uv
 
+# Tailscale のインストール
+install-packages-tailscale:
+	@echo "📦 Tailscale をインストールしています..."
+	@if command -v tailscale >/dev/null 2>&1; then \
+		echo "✅ Tailscale は既にインストールされています"; \
+	else \
+		curl -fsSL https://tailscale.com/install.sh | sh; \
+	fi
+	@echo "✅ Tailscale のインストールが完了しました"
+
+.PHONY: install-packages-tailscale
+
 
 # ========================================
 # 後方互換性のためのエイリアス (一部のみここに定義)
@@ -869,9 +881,23 @@ install-packages-openlogi:
 			echo "✅ OpenLogi は既にインストールされています"; \
 		else \
 			echo "🔍 GitHub Releases から最新の OpenLogi (deb) のダウンロードURLを取得中..."; \
-			LATEST_RELEASE=$$(curl -fsSL https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
-			DEB_URL=$$(echo "$$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".deb")) | .browser_download_url' 2>/dev/null | head -n 1); \
-			if [ -n "$$DEB_URL" ] && [ "$$DEB_URL" != "null" ]; then \
+			ARCH=$$(dpkg --print-architecture 2>/dev/null || uname -m); \
+			case "$$ARCH" in \
+				x86_64|amd64) TARGET_ARCH="amd64" ;; \
+				aarch64|arm64) TARGET_ARCH="arm64" ;; \
+				*) TARGET_ARCH="amd64" ;; \
+			esac; \
+			AUTH_HEADER=(); \
+			[ -n "$$GITHUB_TOKEN" ] && AUTH_HEADER=(-H "Authorization: token $$GITHUB_TOKEN"); \
+			LATEST_RELEASE=$$(curl -fsSL "$${AUTH_HEADER[@]}" https://api.github.com/repos/AprilNEA/OpenLogi/releases/latest 2>/dev/null || echo ""); \
+			DEB_URL=$$(echo "$$LATEST_RELEASE" | jq -r --arg arch "$$TARGET_ARCH" '[.assets[] | select(.name | test("linux-" + $$arch + "\\.deb$$"))][0].browser_download_url // empty' 2>/dev/null); \
+			if [ -z "$$DEB_URL" ]; then \
+				LATEST_TAG=$$(echo "$$LATEST_RELEASE" | jq -r '.tag_name // empty' 2>/dev/null); \
+				if [ -n "$$LATEST_TAG" ]; then \
+					DEB_URL="https://github.com/AprilNEA/OpenLogi/releases/download/$${LATEST_TAG}/openlogi-$${LATEST_TAG}-linux-$${TARGET_ARCH}.deb"; \
+				fi; \
+			fi; \
+			if [ -n "$$DEB_URL" ]; then \
 				echo "📥 ダウンロード中: $$DEB_URL"; \
 				TEMP_DEB=$$(mktemp --suffix=.deb); \
 				if curl -fsSL "$$DEB_URL" -o "$$TEMP_DEB"; then \
@@ -884,7 +910,8 @@ install-packages-openlogi:
 					exit 1; \
 				fi; \
 			else \
-				echo "⚠️ GitHub Release に OpenLogi の deb ファイルが見つかりませんでした。"; \
+				echo "❌ OpenLogi の deb ファイルのダウンロードURLを取得できませんでした。"; \
+				exit 1; \
 			fi; \
 		fi; \
 		mkdir -p ~/.local/share/applications; \
@@ -925,6 +952,9 @@ install-packages-openlogi:
 		fi; \
 	fi
 	@$(call create_marker,install-packages-openlogi,N/A)
+
+.PHONY: install-openlogi install-packages-openlogi
+install-openlogi: install-packages-openlogi  ## OpenLogiをインストール(エイリアス)
 
 # システムのシャットダウン
 shutdown-system:
